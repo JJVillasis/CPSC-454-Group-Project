@@ -1,0 +1,33 @@
+service: imgur-clone-backend-functions
+
+frameworkVersion: ">=3.22.0"
+
+custom:
+  bucket: dev-imgur-clone-bucket-test
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: us-east-1
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "arn:aws:s3:::${self:custom.bucket}"
+    - Effect: Allow
+      Action:
+        - s3:*
+      Resource: "arn:aws:s3:::${self:custom.bucket}/*"
+
+functions:
+  list:
+    handler: listS3Objects.list
+    events:
+      - http:
+          path: list
+          method: get
+          cors: true
+package:
+  exclude:
+    - node_modules/**
+    - venv/**
