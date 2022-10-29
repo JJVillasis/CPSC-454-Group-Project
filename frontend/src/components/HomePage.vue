@@ -1,7 +1,9 @@
 <template>
     <div>
         <div class="d-flex justify-content-between">
-            <button type="button" class="btn btn-success ml-2">+ New Post</button>
+            <button type="button" class="btn btn-success ml-2">
+                <router-link class="nav-link" to="upload">+ New Post</router-link>
+            </button>
             <div class="btn-group btn-group-toggle my-2"  data-toggle="buttons">
                 <label class="btn btn-secondary btn-warning">
                     <input type="radio" name="options" id="option1" v-on:click="changeSelection($event)" autocomplete="off"> Most Viral ↓
@@ -27,6 +29,7 @@
 
 <script>
 import ImageCard from './ImageCard.vue'
+import axios from 'axios';
 
 export default {
     name: 'HomePage',
@@ -45,12 +48,24 @@ export default {
             isActive : ''
         }
     },
+    async mounted() {
+      await axios.get("http://localhost:3000/listall", {
+//We can add more configurations in this object
+        params: {
+
+          //This is one of the many options we can configure
+        }
+      }).then( response =>
+          this.latest = response.data
+      );
+    },
     methods: {
         changeSelection: function(event)
         {
             let element = event.target
             console.log("Clicked " + element.id);
         }
+
     }
 }
 </script>
