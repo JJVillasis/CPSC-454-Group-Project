@@ -17,6 +17,14 @@ const configTwo = {
     },
     region: 'us-east-1',
 };
+
+const poolConfig = {
+    user: 'postgres',
+    host: 'image-database.*',
+    database: 'images',
+    password: '*',
+    port: 5432,
+};
 ```
 And in frontend/src/config/index.js
 ```javascript
