@@ -1,7 +1,8 @@
 const express = require('express')
-const { configTwo, poolConfig } = import('./config.js')
+//const { configTwo, poolConfig } = import('./config.js')
 const app = express()
 const port = 3000
+require('dotenv').config();
 
 const url = "https://dev-imgur-clone-bucket.s3.amazonaws.com/"
 app.get('/', (req, res) => res.send('Hello World!'))
@@ -46,7 +47,13 @@ const params = {
 };
 
 // pages: https://stackoverflow.com/questions/9437581/node-js-amazon-s3-how-to-iterate-through-all-files-in-a-bucket
-
+const configTwo = {
+    credentials: {
+            accessKeyId: process.env.accessKeyId,
+            secretAccessKey: process.env.secretAccessKey
+    },
+    region: process.env.region
+}
 
 async function list() {
     const client = new S3Client(configTwo);
@@ -80,9 +87,18 @@ function requestUploadURL(event, context, callback) {
     })
 }
 
+const poolConfig = {
+    user: process.env.user,
+    host: process.env.host,
+    database: process.env.database,
+    password: process.env.password,
+    port: process.env.port,
+};
+
 const {Pool, Client} = require('pg')
 
 async function db() {
+    console.log(poolConfig + " " + configTwo);
     const pool = new Pool(poolConfig)
     const answer = await pool.query('SELECT * from images');
     console.log(answer.rows);
