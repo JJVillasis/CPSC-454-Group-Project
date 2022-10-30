@@ -42,7 +42,7 @@ export default {
     },
     data() {
         return {
-            posts, 
+            posts,
         }
     },
     setup() {
@@ -66,6 +66,17 @@ export default {
     return {
         scrollComponent
     }
+    },
+    async mounted() {
+      await axios.get("http://localhost:3000/listall", {
+//We can add more configurations in this object
+        params: {
+
+          //This is one of the many options we can configure
+        }
+      }).then( response =>
+          this.latest = response.data
+      );
     },
     async mounted() {
       await axios.get("http://localhost:3000/listall", {

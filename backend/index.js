@@ -1,5 +1,5 @@
 const express = require('express')
-const { configTwo } = import('./config.js')
+const { configTwo, poolConfig } = import('./config.js')
 const app = express()
 const port = 3000
 
@@ -15,6 +15,11 @@ app.get('/list', async (req, res) => {
 
 app.get('/db', async (req, res) => {
     const theList = await db();
+    res.send(theList)
+})
+
+app.get('/images', async (req, res) => {
+    const theList = await imagesWithComments();
     res.send(theList)
 })
 
@@ -44,14 +49,6 @@ const params = {
 
 
 async function list() {
-    const config = {
-        credentials: {
-            accessKeyId: 'AKIAUVCVY3VWPA6TKYT3',
-            secretAccessKey: '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'
-        },
-        region: 'us-east-1',
-    };
-
     const client = new S3Client(configTwo);
     const command = new ListObjectsV2Command(params);
     const response = await client.send(command);
@@ -86,26 +83,22 @@ function requestUploadURL(event, context, callback) {
 const {Pool, Client} = require('pg')
 
 async function db() {
-    const pool = new Pool({
-        user: 'postgres',
-        host: 'image-database.c6jtkyis6qkp.us-east-1.rds.amazonaws.com',
-        database: 'images',
-        password: 'KTrMpsNIhmD8o3UwY150',
-        port: 5432,
-    })
+    const pool = new Pool(poolConfig)
     const answer = await pool.query('SELECT * from images');
     console.log(answer.rows);
     pool.end()
     return answer.rows;
 }
 
-/*const client = new Client({
-  user: 'postgres',
-  host: 'image-database.c6jtkyis6qkp.us-east-1.rds.amazonaws.com',
-  database: 'image-database',
-  password: 'KTrMpsNIhmD8o3UwY150',
-  port: 5432,
-})
+async function imagesWithComments() {
+    const pool = new Pool(poolConfig)
+    const answer = await pool.query('SELECT * from images ORDER BY image_date DESC');
+    console.log(answer.rows);
+    pool.end()
+    return answer.rows;
+}
+
+/*const client = new Client(poolConfig)
 client.connect()
 client.query('SELECT NOW()', (err, res) => {
   console.log(err, res)
