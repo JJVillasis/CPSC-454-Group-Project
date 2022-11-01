@@ -16,37 +16,56 @@
                 </label>
             </div>
         </div>
-
-        <div class="container">
-            <div class="row">
-                <div v-for="image in latest" v-bind:key="image" class="col-lg-4 mt-3">
-                    <ImageCard :img="image" />
-                </div>
-            </div>
+        <div class="scrolling-component" ref="scrollComponent">
+        <div class = "container">
+        <div class ="row">
+            <post-component v-for="post in posts" :post="post" v-bind:key="post"/>
         </div>
+    </div>
+    </div>
     </div>
 </template>
 
 <script>
-import ImageCard from './ImageCard.vue'
 import axios from 'axios';
+import PostComponent from './PostComponent.vue'
+import getPosts from "../get-posts";
+import { ref, onMounted, onUnmounted} from 'vue'
+const posts = ref(getPosts(10))
+const scrollComponent = ref(null)
+
 
 export default {
     name: 'HomePage',
     components: {
-        ImageCard
+        PostComponent
     },
     data() {
         return {
-            latest: [
-                "https://picsum.photos/400/200",
-                "https://picsum.photos/400/200",
-                "https://picsum.photos/400/200",
-                "https://picsum.photos/400/200",
-                "https://picsum.photos/400/200"
-            ],
-            isActive : ''
+            posts, 
         }
+    },
+    setup() {
+        const loadMorePosts = () => {
+        let newPosts = getPosts(20)
+         console.log(newPosts)
+        posts.value.push(...newPosts)
+ }
+        onMounted(() => {
+            window.addEventListener("scroll", handleScroll)
+        })
+        onUnmounted(() => {
+            window.removeEventListener("scroll", handleScroll)
+        })
+        const handleScroll = () => {
+            let element = scrollComponent.value
+    if (element.getBoundingClientRect().bottom < window.innerHeight) {
+         loadMorePosts()
+        }
+    }
+    return {
+        scrollComponent
+    }
     },
     async mounted() {
       await axios.get("http://localhost:3000/listall", {
