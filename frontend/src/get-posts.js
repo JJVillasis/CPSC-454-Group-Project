@@ -1,11 +1,14 @@
-var names = ['https://picsum.photos/300/200', 'https://picsum.photos/300/200', 'https://picsum.photos/300/200', 'https://picsum.photos/300/200'] // used to generate posts for this tutorial
-const getPosts = (number) => {
+let lastNames = null;
+const getPosts = (names, start, number) => {
   // generate a number of posts
   // in a real setting, this would be a database call or algorithm
+  if (names)
+    lastNames = names; // save database query results for later
+
   let ret = []
-  for (var i = 0; i < number; i++) {
+  for (let i = start; i < start + number; i++) {
     ret.push({
-      imgURL: names[i % names.length],
+      imgURL: lastNames[i % lastNames.length], // this should the actual index
       caption:
         'Caption goes here!',
     })

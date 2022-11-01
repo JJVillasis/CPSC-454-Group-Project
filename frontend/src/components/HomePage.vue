@@ -30,10 +30,8 @@
 import axios from 'axios';
 import PostComponent from './PostComponent.vue'
 import getPosts from "../get-posts";
-import { ref, onMounted, onUnmounted} from 'vue'
-const posts = ref(getPosts(10))
+import { ref } from 'vue'
 const scrollComponent = ref(null)
-
 
 export default {
     name: 'HomePage',
@@ -42,60 +40,55 @@ export default {
     },
     data() {
         return {
-            posts,
+            posts: [],
+            lastItem: 0
         }
     },
     setup() {
-        const loadMorePosts = () => {
-        let newPosts = getPosts(20)
-         console.log(newPosts)
-        posts.value.push(...newPosts)
- }
-        onMounted(() => {
-            window.addEventListener("scroll", handleScroll)
-        })
-        onUnmounted(() => {
-            window.removeEventListener("scroll", handleScroll)
-        })
-        const handleScroll = () => {
-            let element = scrollComponent.value
-    if (element.getBoundingClientRect().bottom < window.innerHeight) {
-         loadMorePosts()
-        }
-    }
-    return {
-        scrollComponent
-    }
-    },
-    async mounted() {
-      await axios.get("http://localhost:3000/listall", {
-//We can add more configurations in this object
-        params: {
-
-          //This is one of the many options we can configure
-        }
-      }).then( response =>
-          this.latest = response.data
-      );
-    },
-    async mounted() {
-      await axios.get("http://localhost:3000/listall", {
-//We can add more configurations in this object
-        params: {
-
-          //This is one of the many options we can configure
-        }
-      }).then( response =>
-          this.latest = response.data
-      );
+      return {
+          scrollComponent
+      }
     },
     methods: {
-        changeSelection: function(event)
-        {
+        changeSelection: function(event) {
             let element = event.target
             console.log("Clicked " + element.id);
-        }
+        },
+        getdata: function() {
+          axios.get("http://localhost:3000/listall", {
+            //We can add more configurations in this object
+            params: {
 
+              //This is one of the many options we can configure
+            }
+          }).then( response => {
+                this.posts = getPosts(response.data, 0, 1);
+                this.lastItem = 1
+              }
+          );
+        },
+        getNextData : function() {
+          window.onscroll = () => {
+            let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
+            if (bottomOfWindow) {
+              axios.get("http://localhost:3000/listall", {
+                //We can add more configurations in this object
+                params: {
+                  //This is one of the many options we can configure
+                }
+              }).then( response => {
+                    this.posts.push(...getPosts(response.data, this.lastItem, 1));
+                    this.lastItem += 1
+              });
+            }
+          }
+        }
+    },
+    beforeMount() {
+      this.getdata();
+    },
+    mounted() {
+        this.getNextData();
     }
 }
 </script>
