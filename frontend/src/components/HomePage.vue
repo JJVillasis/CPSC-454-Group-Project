@@ -6,13 +6,13 @@
             </button>
             <div class="btn-group btn-group-toggle my-2"  data-toggle="buttons">
                 <label class="btn btn-secondary btn-warning">
-                    <input type="radio" name="options" id="option1" v-on:click="changeSelection($event)" autocomplete="off"> Most Viral ↓
+                    <input type="radio" name="options" id="viral" v-on:click="changeSelection($event)" autocomplete="off"> Most Viral ↓
                 </label>
                 <label class="btn btn-secondary btn-warning">
-                    <input type="radio" name="options" id="option2" v-on:click="changeSelection($event)" autocomplete="off"> Newest ↓
+                    <input type="radio" name="options" id="newest" v-on:click="changeSelection($event)" autocomplete="off"> Newest ↓
                 </label>
                 <label class="btn btn-secondary btn-warning mr-3">
-                    <input type="radio" name="options" id="option3" v-on:click="changeSelection($event)" autocomplete="off"> Controversial ↓
+                    <input type="radio" name="options" id="controversial" v-on:click="changeSelection($event)" autocomplete="off"> Controversial ↓
                 </label>
             </div>
         </div>
@@ -41,7 +41,10 @@ export default {
     data() {
         return {
             posts: [],
-            lastItem: 0
+            lastItem: 0,
+            text: null,
+            sortBy: null,
+            username: null
         }
     },
     setup() {
@@ -51,19 +54,22 @@ export default {
     },
     methods: {
         changeSelection: function(event) {
-            let element = event.target
-            console.log("Clicked " + element.id);
+            console.log("Clicked " + event.target.id);
+            this.getdata(null, event.target.id)
         },
-        getdata: function() {
-          axios.get("http://localhost:3000/listall", {
+        getdata: function(text, sortby, username) {
+          this.text = text;
+          this.sortBy = sortby;
+          this.username = username;
+          axios.get("http://localhost:3000/search?text=" + text + "&sortby=" + sortby + "&user="+username, {
             //We can add more configurations in this object
             params: {
 
               //This is one of the many options we can configure
             }
           }).then( response => {
-                this.posts = getPosts(response.data, 0, 1);
-                this.lastItem = 1
+                this.posts = getPosts(response.data, 0, 5);
+                this.lastItem = 5
               }
           );
         },
@@ -71,14 +77,14 @@ export default {
           window.onscroll = () => {
             let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
             if (bottomOfWindow) {
-              axios.get("http://localhost:3000/listall", {
+              axios.get("http://localhost:3000/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username, {
                 //We can add more configurations in this object
                 params: {
                   //This is one of the many options we can configure
                 }
               }).then( response => {
-                    this.posts.push(...getPosts(response.data, this.lastItem, 1));
-                    this.lastItem += 1
+                    this.posts.push(...getPosts(response.data, this.lastItem, 5));
+                    this.lastItem += 5
               });
             }
           }

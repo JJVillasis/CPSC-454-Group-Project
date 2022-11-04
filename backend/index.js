@@ -35,10 +35,28 @@ app.get('/listall', async (req, res) => {
     res.send(imageList)
 })
 
+// search?
+//    text=   search text
+//    sortby= newest, controversial, viral
+//    user=   username
+
+app.get('/search', async (req, res) => {
+    const theList = await search(req.query.text, req.query.sortby, req.query.user);
+    const imageList = [];
+    for (let i = 0; i < theList.length; ++i) {
+        let image = {
+            imgURL: url + theList[i].image_object_id,
+            title: theList[i].image_title,
+            username: theList[i].username
+        }
+        imageList.push(image);
+    }
+    res.header("Access-Control-Allow-Origin", "*");
+    res.send(imageList)
+})
+
 const AWS = require('aws-sdk');
 const {S3Client, ListObjectsV2Command} = require("@aws-sdk/client-s3"); // CommonJS import
-//AWS.config.update(config);
-//var s3 = new AWS.S3();
 
 const params = {
     Bucket: 'dev-imgur-clone-bucket',
@@ -106,6 +124,31 @@ async function db() {
     return answer.rows;
 }
 
+/**
+ * The main multi-functional search DB query
+ * @param text
+ * @param sortBy
+ * @param user
+ * @returns {Promise<*>}
+ */
+
+async function search(text, sortBy, user) {
+    //console.log(poolConfig + " " + configTwo);
+    console.log("text=" + text + " sortBy=" + sortBy + " user=" + user);
+    const pool = new Pool(poolConfig);
+    let query = 'SELECT * from images';
+    if (sortBy === "newest") {
+        query += ' ORDER BY image_date DESC';
+    } else if (sortBy === "viral") {
+        //query += ' ORDER BY image_date DESC';
+    } else if (sortBy === "controversial") {
+        //query += ' ORDER BY image_date DESC';
+    }
+    const answer = await pool.query(query);
+    pool.end()
+    return answer.rows;
+}
+
 async function imagesWithComments() {
     const pool = new Pool(poolConfig)
     const answer = await pool.query('SELECT * from images ORDER BY image_date DESC');
@@ -113,11 +156,3 @@ async function imagesWithComments() {
     pool.end()
     return answer.rows;
 }
-
-/*const client = new Client(poolConfig)
-client.connect()
-client.query('SELECT NOW()', (err, res) => {
-  console.log(err, res)
-  client.end()
-})
-*/
