@@ -1,4 +1,4 @@
-<template>
+<!--template>
   <div class="container">
     <div class="upload-wrapper">
       <h4>Upload Images</h4>
@@ -13,12 +13,13 @@
       </div>
     </div>
   </div>
-</template>
+</template-->
 
 <script>
 import CognitoAuth from './../cognito';
 import config from './../config';
 import axios from 'axios';
+const AWS = require('aws-sdk');
 
 import {getCurrentInstance, reactive, watch} from 'vue';
 import {useDropzone} from 'vue3-dropzone';
@@ -76,7 +77,69 @@ function onDrop(acceptFiles, rejectReasons) {
   console.log(acceptFiles);
   console.log(rejectReasons);
   state.files = acceptFiles;
-  sendingEvent(acceptFiles[0], null, null)
+  //sendingEvent(acceptFiles[0], null, null)
+  addPhoto()
+}
+
+function handleClickDeleteFile(index) {
+  state.files.splice(index, 1);
+}
+
+function addPhoto() {
+  CognitoAuth.getIdToken(function (err, token) {
+    if (err) {
+      return alert("There was an error uploading your photo: " + err.message);
+
+    } else {
+      const idKey = 'cognito-idp.us-east-1.amazonaws.com/' + config.IdentityPoolId;
+
+      AWS.config.update({
+        region: config.bucketRegion,
+        credentials: new AWS.CognitoIdentityCredentials({
+          IdentityPoolId: config.IdentityPoolIdLong,
+          //IdentityId: config.UserPoolId,
+          Logins: {
+            [idKey]: token
+          }
+        })
+      });
+
+      const s3 = new AWS.S3({
+        apiVersion: "2006-03-01",
+        params: {Bucket: config.bucket}
+      });
+
+      const files = state.files
+      if (!files.length) {
+        return alert("Please choose a file to upload first.");
+      }
+      var file = files[0];
+      var fileName = file.name;
+      var albumPhotosKey = CognitoAuth.getCurrentUser().getUsername() + "/";
+
+      var photoKey = albumPhotosKey + fileName;
+
+      // Use S3 ManagedUpload class as it supports multipart uploads
+      var upload = new AWS.S3.ManagedUpload({
+        params: {
+          Bucket: config.bucket,
+          Key: photoKey,
+          Body: file
+        }
+      });
+
+      const promise = upload.promise();
+
+      promise.then(
+          function (data) {
+            alert("Successfully uploaded photo.");
+          },
+          function (err) {
+            return alert("There was an error uploading your photo: " + err.message);
+          }
+      );
+    }
+  })
 }
 
 export default {
@@ -147,6 +210,23 @@ export default {
 };
 </script>
 
+<template>
+  <div>
+    <div class="dropzone" v-bind="getRootProps()">
+      <div
+          class="border"
+          :class="{
+          isDragActive,
+        }"
+      >
+        <input v-bind="getInputProps()" />
+        <p v-if="isDragActive">Drop the files here ...</p>
+        <p v-else>Drag and drop files here, or Click to select files</p>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped>
 .upload-wrapper {
   background-color: white;
@@ -161,6 +241,57 @@ export default {
   margin: 0;
   padding: 0;
   margin-bottom: 40px;
+}
+.dropzone,
+.files {
+  width: 100%;
+  max-width: 300px;
+  margin: 0 auto;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: rgba(60, 64, 67, 0.3) 0px 1px 2px 0px,
+  rgba(60, 64, 67, 0.15) 0px 1px 3px 1px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.border {
+  border: 2px dashed #ccc;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  transition: all 0.3s ease;
+  background: #fff;
+
+&.isDragActive {
+   border: 2px dashed #ffb300;
+   background: rgb(255 167 18 / 20%);
+ }
+}
+
+.file-item {
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgb(255 167 18 / 20%);
+  padding: 7px;
+  padding-left: 15px;
+  margin-top: 10px;
+
+&:first-child {
+   margin-top: 0;
+ }
+
+.delete-file {
+  background: red;
+  color: #fff;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
 }
 
 .dropbox {
