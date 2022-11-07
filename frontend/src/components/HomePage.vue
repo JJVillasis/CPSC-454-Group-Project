@@ -29,6 +29,7 @@
 <script>
 import axios from 'axios';
 import PostComponent from './PostComponent.vue'
+import config from '../config'
 import getPosts from "../get-posts";
 import { ref } from 'vue'
 const scrollComponent = ref(null)
@@ -57,11 +58,14 @@ export default {
             console.log("Clicked " + event.target.id);
             this.getdata(null, event.target.id)
         },
+        getBackendUrl : function() {
+          return config.prod ? config.backendProd : config.backendLocal;
+        },
         getdata: function(text, sortby, username) {
           this.text = text;
           this.sortBy = sortby;
           this.username = username;
-          axios.get("http://localhost:3000/search?text=" + text + "&sortby=" + sortby + "&user="+username, {
+          axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username, {
             //We can add more configurations in this object
             params: {
 
@@ -77,7 +81,7 @@ export default {
           window.onscroll = () => {
             let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
             if (bottomOfWindow) {
-              axios.get("http://localhost:3000/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username, {
+              axios.get(this.getBackendUrl() + "/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username, {
                 //We can add more configurations in this object
                 params: {
                   //This is one of the many options we can configure
