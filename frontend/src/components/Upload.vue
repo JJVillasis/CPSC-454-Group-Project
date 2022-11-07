@@ -21,208 +21,193 @@ import config from './../config';
 import axios from 'axios';
 const AWS = require('aws-sdk');
 
-import {getCurrentInstance, reactive, watch} from 'vue';
+import {reactive, watch} from 'vue';
 import {useDropzone} from 'vue3-dropzone';
+import PostComponent from "@/components/PostComponent";
 
-const state = reactive({
-  files: [],
-});
-
+//const state = reactive({
+//  files: [],
+//});
+/*
 const {getRootProps, getInputProps, isDragActive, ...rest} = useDropzone({
   onDrop,
-});
+});*/
 
-watch(state, () => {
-  console.log('state', state);
-});
 
-watch(isDragActive, () => {
-  console.log('isDragActive', isDragActive.value, rest);
-});
 
-let Vue = getCurrentInstance();
+//let Vue = getCurrentInstance();
 
-function sendingEvent(file, xhr, formData) {
-  CognitoAuth.getIdToken((err, result) => {
-    if (err) {
-      Vue.error = err;
-    } else {
-      const url = config.s3SignedUrl;
-      axios.defaults.headers.common['Authorization'] = result;
-      let headers = {
-        "Access-Control-Allow-Origin": "*"
-      };
-      axios({method: 'post', url: url, headers: headers, data: {name: file.name, type: file.type}})
-          .then(x => {
-            var options = {
-              headers: {
-                'Content-Type': file.type,
-                'Access-Control-Allow-Origin': '*'
-              }
-            }
-            delete axios.defaults.headers.common['Authorization'];
-            axios.put(x.data.uploadURL, file, options)
-          })
-          .then(status => {
-            Vue.status = status;
-          })
-          .catch(err => {
-            Vue.error = err;
-          })
-    }
-  })
-}
 
-function onDrop(acceptFiles, rejectReasons) {
-  console.log(acceptFiles);
-  console.log(rejectReasons);
-  state.files = acceptFiles;
-  //sendingEvent(acceptFiles[0], null, null)
-  addPhoto()
-}
+//function handleClickDeleteFile(index) {
+//  state.files.splice(index, 1);
+//}
 
-function handleClickDeleteFile(index) {
-  state.files.splice(index, 1);
-}
-
-function addPhoto() {
-  CognitoAuth.getIdToken(function (err, token) {
-    if (err) {
-      return alert("There was an error uploading your photo: " + err.message);
-
-    } else {
-      const idKey = 'cognito-idp.us-east-1.amazonaws.com/' + config.IdentityPoolId;
-
-      AWS.config.update({
-        region: config.bucketRegion,
-        credentials: new AWS.CognitoIdentityCredentials({
-          IdentityPoolId: config.IdentityPoolIdLong,
-          //IdentityId: config.UserPoolId,
-          Logins: {
-            [idKey]: token
-          }
-        })
-      });
-
-      const s3 = new AWS.S3({
-        apiVersion: "2006-03-01",
-        params: {Bucket: config.bucket}
-      });
-
-      const files = state.files
-      if (!files.length) {
-        return alert("Please choose a file to upload first.");
-      }
-      var file = files[0];
-      var fileName = file.name;
-      var albumPhotosKey = CognitoAuth.getCurrentUser().getUsername() + "/";
-
-      var photoKey = albumPhotosKey + fileName;
-
-      // Use S3 ManagedUpload class as it supports multipart uploads
-      var upload = new AWS.S3.ManagedUpload({
-        params: {
-          Bucket: config.bucket,
-          Key: photoKey,
-          Body: file
-        }
-      });
-
-      const promise = upload.promise();
-
-      promise.then(
-          function (data) {
-            alert("Successfully uploaded photo.");
-          },
-          function (err) {
-            return alert("There was an error uploading your photo: " + err.message);
-          }
-      );
-    }
-  })
-}
 
 export default {
   // eslint-disable-next-line
   name: "Upload",
-
+  components: {PostComponent},
   setup() {
-    Vue = getCurrentInstance();
+    //Vue = getCurrentInstance();
+
+    const state = reactive({
+      files: [],
+    });
+
+    let post = reactive({
+      imgUrl: null,
+      caption: "No image",
+      username: CognitoAuth.getCurrentUser().getUsername()
+    })
+
+    let caption = reactive({
+      text: ""
+    })
+
+    function addPhoto() {
+      CognitoAuth.getIdToken(function (err, token) {
+        if (err) {
+          return alert("There was an error uploading your photo: " + err.message);
+
+        } else {
+          const idKey = 'cognito-idp.us-east-1.amazonaws.com/' + config.IdentityPoolId;
+
+          AWS.config.update({
+            region: config.bucketRegion,
+            credentials: new AWS.CognitoIdentityCredentials({
+              IdentityPoolId: config.IdentityPoolIdLong,
+              Logins: {
+                [idKey]: token
+              }
+            })
+          });
+
+          /*const s3 = new AWS.S3({
+            apiVersion: "2006-03-01",
+            params: {Bucket: config.bucket}
+          });*/
+
+          const files = state.files
+          if (!files.length) {
+            return alert("Please choose a file to upload first.");
+          }
+          var file = files[0];
+          var fileName = file.name;
+          var albumPhotosKey = CognitoAuth.getCurrentUser().getUsername() + "/";
+
+          var photoKey = albumPhotosKey + fileName;
+
+          // Use S3 ManagedUpload class as it supports multipart uploads
+          var upload = new AWS.S3.ManagedUpload({
+            params: {
+              Bucket: config.bucket,
+              Key: photoKey,
+              Body: file
+            }
+          });
+
+          const promise = upload.promise();
+
+          promise.then(
+              function (data) {
+                console.log("Successfully uploaded photo: " + data.Location);
+                alert("Successfully Uploaded photo: " + data.Key);
+                axios.post("http://localhost:3000/addimage", {
+                  "objectId": photoKey,
+                  "username": CognitoAuth.getCurrentUser().getUsername(),
+                  "caption": caption.text
+                }, {
+                  params: { },
+                  headers: {
+                    "Access-Control-Allow-Origin": "*",
+                    'Content-Type': 'application/json',}
+                }).then(
+                    response => {
+                      console.log(response)
+                    }
+                )
+              },
+              function (err) {
+                return alert("There was an error uploading your photo: " + err.message);
+              }
+          );
+        }
+      })
+    }
+
+
+    function onDrop(acceptFiles, rejectReasons) {
+      console.log(acceptFiles);
+      console.log(rejectReasons);
+      state.files = acceptFiles;
+      post.imgUrl = acceptFiles[0].path;
+      post.caption = acceptFiles[0].name;
+
+      //addPhoto()
+    }
+
+    const {getRootProps, getInputProps, isDragActive, ...rest} = useDropzone({
+      onDrop,
+    });
+
+    watch(state, () => {
+      console.log('state', state);
+    });
+
+    watch(isDragActive, () => {
+      console.log('isDragActive', isDragActive.value, rest);
+    });
+
+    function upload() {
+      addPhoto()
+
+    }
 
     return {
       getRootProps,
       getInputProps,
       isDragActive,
-      ...rest,
+      post,
+      state,
+      caption,
+      upload,
+      ...rest
     };
   },
   data: function () {
     return {
       error: '',
-      status: '',
-      signurl: '',
-      dropzoneOptions: {
-        url: 'https://httpbin.org/post',
-        thumbnailWidth: 200,
-        addRemoveLinks: true,
-        autoProcessQueue: false
-      },
-      awss3: {
-        signingURL: 'http://aws-direct-s3.dev/',
-        headers: {},
-        params: {}
-      },
+      status: ''
     }
   },
+  beforeMount() {
+
+  },
   methods: {
-    /*eslint no-unused-vars: "off"*/
-    sendingEvent(file, xhr, formData) {
-      this.$cognitoAuth.getIdToken((err, result) => {
-        if (err) {
-          this.error = err;
-        } else {
-          const url = config.s3SignedUrl;
-          axios.defaults.headers.common['Authorization'] = result;
-          let headers = {
-            "Access-Control-Allow-Origin": "*"
-          };
-          axios({method: 'post', url: url, headers: headers, data: {name: file.name, type: file.type}})
-              .then(x => {
-                var options = {
-                  headers: {
-                    'Content-Type': file.type,
-                    'Access-Control-Allow-Origin': '*'
-                  }
-                }
-                delete axios.defaults.headers.common['Authorization'];
-                axios.put(x.data.uploadURL, file, options)
-              })
-              .then(status => {
-                this.status = status;
-              })
-              .catch(err => {
-                this.error = err;
-              })
-        }
-      })
-    }
+    // no methods since can't figure out how to put them here.
   }
 };
 </script>
 
 <template>
   <div>
-    <div class="dropzone" v-bind="getRootProps()">
+    <div class="dropzone" v-bind="this.getRootProps()">
       <div
           class="border"
-          :class="{
-          isDragActive,
-        }"
+          :class="{isDragActive,}"
       >
-        <input v-bind="getInputProps()" />
+        <input v-bind="this.getInputProps()" />
         <p v-if="isDragActive">Drop the files here ...</p>
         <p v-else>Drag and drop files here, or Click to select files</p>
       </div>
+    </div>
+
+    <div v-if="state.files.length > 0">
+      <h4 class="upload-wrapper">You have chosen a file</h4>
+      Caption:<input v-model="caption.text" placeholder="enter caption here" />
+      <button class="btn btn-info" v-on:click="upload">Upload
+      </button>
+      <post-component :post="post" v-bind:key="post"/>
     </div>
   </div>
 </template>
