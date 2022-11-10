@@ -1,7 +1,8 @@
 const express = require('express')
-const { configTwo } = import('./config.js')
+//const { configTwo, poolConfig } = import('./config.js')
 const app = express()
 const port = 3000
+require('dotenv').config();
 
 const url = "https://dev-imgur-clone-bucket.s3.amazonaws.com/"
 app.get('/', (req, res) => res.send('Hello World!'))
@@ -18,6 +19,11 @@ app.get('/db', async (req, res) => {
     res.send(theList)
 })
 
+app.get('/images', async (req, res) => {
+    const theList = await imagesWithComments();
+    res.send(theList)
+})
+
 app.get('/listall', async (req, res) => {
     const theList = await db();
     const imageList = [];
@@ -29,10 +35,28 @@ app.get('/listall', async (req, res) => {
     res.send(imageList)
 })
 
+// search?
+//    text=   search text
+//    sortby= newest, controversial, viral
+//    user=   username
+
+app.get('/search', async (req, res) => {
+    const theList = await search(req.query.text, req.query.sortby, req.query.user);
+    const imageList = [];
+    for (let i = 0; i < theList.length; ++i) {
+        let image = {
+            imgURL: url + theList[i].image_object_id,
+            title: theList[i].image_title,
+            username: theList[i].username
+        }
+        imageList.push(image);
+    }
+    res.header("Access-Control-Allow-Origin", "*");
+    res.send(imageList)
+})
+
 const AWS = require('aws-sdk');
 const {S3Client, ListObjectsV2Command} = require("@aws-sdk/client-s3"); // CommonJS import
-//AWS.config.update(config);
-//var s3 = new AWS.S3();
 
 const params = {
     Bucket: 'dev-imgur-clone-bucket',
@@ -41,17 +65,15 @@ const params = {
 };
 
 // pages: https://stackoverflow.com/questions/9437581/node-js-amazon-s3-how-to-iterate-through-all-files-in-a-bucket
-
+const configTwo = {
+    credentials: {
+            accessKeyId: process.env.accessKeyId,
+            secretAccessKey: process.env.secretAccessKey
+    },
+    region: process.env.region
+}
 
 async function list() {
-    const config = {
-        credentials: {
-            accessKeyId: 'AKIAUVCVY3VWPA6TKYT3',
-            secretAccessKey: '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'
-        },
-        region: 'us-east-1',
-    };
-
     const client = new S3Client(configTwo);
     const command = new ListObjectsV2Command(params);
     const response = await client.send(command);
@@ -83,32 +105,54 @@ function requestUploadURL(event, context, callback) {
     })
 }
 
+const poolConfig = {
+    user: process.env.user,
+    host: process.env.host,
+    database: process.env.database,
+    password: process.env.password,
+    port: process.env.port,
+};
+
 const {Pool, Client} = require('pg')
 
 async function db() {
-    const pool = new Pool({
-        user: 'postgres',
-        host: 'image-database.c6jtkyis6qkp.us-east-1.rds.amazonaws.com',
-        database: 'images',
-        password: 'KTrMpsNIhmD8o3UwY150',
-        port: 5432,
-    })
+    console.log(poolConfig + " " + configTwo);
+    const pool = new Pool(poolConfig)
     const answer = await pool.query('SELECT * from images');
     console.log(answer.rows);
     pool.end()
     return answer.rows;
 }
 
-/*const client = new Client({
-  user: 'postgres',
-  host: 'image-database.c6jtkyis6qkp.us-east-1.rds.amazonaws.com',
-  database: 'image-database',
-  password: 'KTrMpsNIhmD8o3UwY150',
-  port: 5432,
-})
-client.connect()
-client.query('SELECT NOW()', (err, res) => {
-  console.log(err, res)
-  client.end()
-})
-*/
+/**
+ * The main multi-functional search DB query
+ * @param text
+ * @param sortBy
+ * @param user
+ * @returns {Promise<*>}
+ */
+
+async function search(text, sortBy, user) {
+    //console.log(poolConfig + " " + configTwo);
+    console.log("text=" + text + " sortBy=" + sortBy + " user=" + user);
+    const pool = new Pool(poolConfig);
+    let query = 'SELECT * from images';
+    if (sortBy === "newest") {
+        query += ' ORDER BY image_date DESC';
+    } else if (sortBy === "viral") {
+        //query += ' ORDER BY image_date DESC';
+    } else if (sortBy === "controversial") {
+        //query += ' ORDER BY image_date DESC';
+    }
+    const answer = await pool.query(query);
+    pool.end()
+    return answer.rows;
+}
+
+async function imagesWithComments() {
+    const pool = new Pool(poolConfig)
+    const answer = await pool.query('SELECT * from images ORDER BY image_date DESC');
+    console.log(answer.rows);
+    pool.end()
+    return answer.rows;
+}

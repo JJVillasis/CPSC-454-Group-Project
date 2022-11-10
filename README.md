@@ -3,20 +3,15 @@
 # How to configure:
 
 Create a file called backend/config.js
-```javascript
-const config = {
-    accessKeyId: 'YOUR_AWS_ACCESS_ID',
-    secretAccessKey: 'YOUR_AWS_SECRET_KEY',
-    region: 'us-east-1'
-}
-
-const configTwo = {
-    credentials: {
-        accessKeyId: 'YOUR_AWS_ACCESS_ID',
-        secretAccessKey: 'YOUR_AWS_SECRET_KEY'
-    },
-    region: 'us-east-1',
-};
+```bash
+accessKeyId=YOUR_ACCESS_KEY_ID
+secretAccessKey=YOUR_SECRET
+region=us-east-1
+user=postgres
+host=image-database.*
+database=images
+password=*
+port=5432
 ```
 And in frontend/src/config/index.js
 ```javascript

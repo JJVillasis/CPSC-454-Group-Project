@@ -1,13 +1,22 @@
-var names = ['https://picsum.photos/300/200', 'https://picsum.photos/300/200', 'https://picsum.photos/300/200', 'https://picsum.photos/300/200'] // used to generate posts for this tutorial
-const getPosts = (number) => {
-  // generate a number of posts
-  // in a real setting, this would be a database call or algorithm
+let lastNames = null;
+
+/**
+ * Generates new posts from a database query
+ * @param names the items from the database
+ * @param start the item to start with
+ * @param number the number of posts to generate
+ * @returns {*[]}
+ */
+const getPosts = (names, start, number) => {
+  if (names)
+    lastNames = names; // save database query results for later
+
   let ret = []
-  for (var i = 0; i < number; i++) {
+  for (let i = start; i < start + number; i++) {
     ret.push({
-      imgURL: names[i % names.length],
-      caption:
-        'Caption goes here!',
+      imgURL: lastNames[i].imgURL, // this should the actual index
+      caption: lastNames[i].title,
+      username: lastNames[i].username
     })
   }
   return ret
