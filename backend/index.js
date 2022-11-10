@@ -1,8 +1,22 @@
 const express = require('express')
-//const { configTwo, poolConfig } = import('./config.js')
+const cors = require("cors");
+const router = express.Router();
 const app = express()
+
 const port = 3000
 require('dotenv').config();
+app.use(cors({
+    origin: "*",
+}));
+app.use(express.json());
+app.use("/",router);
+
+app.use(function(req, res, next) {
+    res.header("Access-Control-Allow-Origin", "*" /*"http://localhost:3000"*/); // update to match the domain you will make the request from
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header('Access-Control-Allow-Methods','GET,PUT,POST,DELETE,PATCH,OPTIONS',)
+    next();
+});
 
 const url = "https://dev-imgur-clone-bucket.s3.amazonaws.com/"
 app.get('/', (req, res) => res.send('Hello World!'))
@@ -47,12 +61,39 @@ app.get('/search', async (req, res) => {
         let image = {
             imgURL: url + theList[i].image_object_id,
             title: theList[i].image_title,
-            username: theList[i].username
+            username: theList[i].username,
+            likes: theList[i].likes,
+            dislikes: theList[i].dislikes
         }
         imageList.push(image);
     }
     res.header("Access-Control-Allow-Origin", "*");
     res.send(imageList)
+})
+
+app.post('/addimage', async (req, res) => {
+    console.log(req.body);
+    console.log(req.headers);
+
+    if (req.body === undefined || req.body === {}) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.send("failure")
+    }
+
+    const objectId = req.body.objectId;
+    const username = req.body.username;
+    const caption = req.body.caption;
+
+    const pool = new Pool(poolConfig)
+    const queryText = `
+        INSERT INTO images (image_title, image_object_id, username, image_date) 
+        VALUES ('${caption}', '${objectId}', '${username}', '${new Date().toDateString()}')`
+    console.log(queryText);
+    const answer = await pool.query(queryText);
+    console.log(answer.rows);
+    pool.end()
+    res.header("Access-Control-Allow-Origin", "*");
+    res.send("success")
 })
 
 const AWS = require('aws-sdk');
@@ -136,13 +177,24 @@ async function search(text, sortBy, user) {
     //console.log(poolConfig + " " + configTwo);
     console.log("text=" + text + " sortBy=" + sortBy + " user=" + user);
     const pool = new Pool(poolConfig);
-    let query = 'SELECT * from images';
+    //let query = 'SELECT * from images';
+    let query = `SELECT images.*, (
+        SELECT COUNT(*) from likes
+    WHERE likes."like" = true
+    AND likes.image_id = images.image_id) as likes,
+        (SELECT COUNT(*) from likes
+    WHERE likes.dislike = true
+    AND likes.image_id = images.image_id) as dislikes,
+        (SELECT COUNT(*) from likes
+    WHERE (likes."like" = true OR likes.dislike = true)
+    AND likes.image_id = images.image_id) as controversy
+    from images`
     if (sortBy === "newest") {
         query += ' ORDER BY image_date DESC';
     } else if (sortBy === "viral") {
-        //query += ' ORDER BY image_date DESC';
+        query += ' ORDER BY likes DESC';
     } else if (sortBy === "controversial") {
-        //query += ' ORDER BY image_date DESC';
+        query += ' ORDER BY controversy DESC';
     }
     const answer = await pool.query(query);
     pool.end()
