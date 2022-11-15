@@ -141,6 +141,39 @@ app.post('/addimage', async (req, res) => {
     res.send("success")
 })
 
+app.post('/like', async (req, res) => {
+    console.log(req.body);
+    console.log(req.headers);
+
+    if (req.body === undefined || req.body === {}) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.send("failure")
+    }
+
+    const image_id = req.body.image_id;
+    const username = req.body.username;
+    const like = req.body.like;
+    const dislike = req.body.dislike;
+
+    const pool = new Pool(poolConfig)
+
+    // push the tags
+    let result = await pool.query(`SELECT * from likes WHERE image_id = '${image_id}' AND username = '${username}'`);
+    console.log("query1")
+    if (result.rowCount !== 1) {
+        console.log("query new row")
+        result = await pool.query('INSERT INTO likes (image_id, username, liked, disliked) VALUES' + `('${image_id}','${username}','${like}','${dislike}')`);
+        console.log("query row inserted")
+    } else {
+        result = await pool.query(`UPDATE likes SET liked = ${like}, disliked = ${dislike} WHERE image_id = '${image_id}' AND username = '${username}'`);
+        console.log("query row edited")
+    }
+    
+    pool.end()
+    res.header("Access-Control-Allow-Origin", "*");
+    res.send("success")
+})
+
 const AWS = require('aws-sdk');
 const {S3Client, ListObjectsV2Command} = require("@aws-sdk/client-s3"); // CommonJS import
 
@@ -225,13 +258,13 @@ async function search(text, sortBy, user) {
     //let query = 'SELECT * from images';
     let query = `SELECT images.*, (
         SELECT COUNT(*) from likes
-    WHERE likes."like" = true
+    WHERE likes."liked" = true
     AND likes.image_id = images.image_id) as likes,
         (SELECT COUNT(*) from likes
-    WHERE likes.dislike = true
+    WHERE likes.disliked = true
     AND likes.image_id = images.image_id) as dislikes,
         (SELECT COUNT(*) from likes
-    WHERE (likes."like" = true OR likes.dislike = true)
+    WHERE (likes."liked" = true OR likes.disliked = true)
     AND likes.image_id = images.image_id) as controversy
     from images`
     if (sortBy === "newest") {

@@ -19,7 +19,8 @@ const getPosts = (names, start, number) => {
       username: lastNames[i].username,
       likes: lastNames[i].likes,
       dislikes: lastNames[i].dislikes,
-      tags: lastNames[i].tags
+      tags: lastNames[i].tags,
+      image_id: lastNames[i].image_id
     })
   }
   console.log(ret)
