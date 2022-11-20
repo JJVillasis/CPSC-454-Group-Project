@@ -55,15 +55,23 @@ app.get('/listall', async (req, res) => {
 //    user=   username
 
 app.get('/search', async (req, res) => {
-    const theList = await search(req.query.text, req.query.sortby, req.query.user);
+    const { image_rows, tags } = await search(req.query.text, req.query.sortby, req.query.user);
     const imageList = [];
-    for (let i = 0; i < theList.length; ++i) {
+    for (let i = 0; i < image_rows.length; ++i) {
+        let theTags = []
+        for (let key in tags) {
+            if (image_rows[i].image_id === tags[key].image_id) {
+                theTags.push(tags[key].tag_name.toLowerCase())
+            }
+        }
         let image = {
-            imgURL: url + theList[i].image_object_id,
-            title: theList[i].image_title,
-            username: theList[i].username,
-            likes: theList[i].likes,
-            dislikes: theList[i].dislikes
+            imgURL: url + image_rows[i].image_object_id,
+            image_id: image_rows[i].image_id,
+            title: image_rows[i].image_title,
+            username: image_rows[i].username,
+            likes: image_rows[i].likes,
+            dislikes: image_rows[i].dislikes,
+            tags: theTags
         }
         imageList.push(image);
     }
@@ -83,14 +91,84 @@ app.post('/addimage', async (req, res) => {
     const objectId = req.body.objectId;
     const username = req.body.username;
     const caption = req.body.caption;
+    const tags = req.body.tags;
+
+    // break up the tags
+    let tagList = []
+    if (tags !== null && tags !== undefined) {
+        let wordList = tags.split(' ')
+        console.log("wordList: " + wordList)
+        for (let word of wordList) {
+            word = word.trim().toLowerCase();
+            if (word[0] === '#') {
+                word = word.substring(1);
+            }
+            if (word.length > 0)
+                tagList.push(word)
+        }
+    }
+    console.log("tags:" + tags + " --> tagList: " + tagList)
 
     const pool = new Pool(poolConfig)
     const queryText = `
         INSERT INTO images (image_title, image_object_id, username, image_date) 
-        VALUES ('${caption}', '${objectId}', '${username}', '${new Date().toDateString()}')`
+        VALUES ('${caption}', '${objectId}', '${username}', '${new Date().toDateString()}')
+        RETURNING image_id`
     console.log(queryText);
     const answer = await pool.query(queryText);
-    console.log(answer.rows);
+    console.log(answer.rowCount);
+
+    // push the tags
+    for (let key = 0; key < tagList.length; ++key) {
+        console.log(`SELECT * from tags WHERE tag_name = '${tagList[key]}'`);
+        let result = await pool.query(`SELECT * from tags WHERE tag_name = '${tagList[key]}'`);
+        //console.log("result = " + result.rows[0].tag_id)
+        let tag_id;
+        if (result.rowCount !== 1) {
+            result = await pool.query(`INSERT INTO tags (tag_name) VALUES ('${tagList[key]}') RETURNING tag_id`);
+            tag_id = result.rows[0].tag_id;
+        } else {
+            tag_id = result.rows[0].tag_id
+        }
+        console.log("result (insert) = " + tag_id)
+
+        let finalResult = await pool.query(`INSERT INTO image_tags (image_id, tag_id) VALUES ('${answer.rows[0].image_id}', '${tag_id}') RETURNING tag_id`);
+        console.log("finalResult = " + finalResult.rows[0].tag_id)
+    }
+
+    pool.end()
+    res.header("Access-Control-Allow-Origin", "*");
+    res.send("success")
+})
+
+app.post('/like', async (req, res) => {
+    console.log(req.body);
+    console.log(req.headers);
+
+    if (req.body === undefined || req.body === {}) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.send("failure")
+    }
+
+    const image_id = req.body.image_id;
+    const username = req.body.username;
+    const like = req.body.like;
+    const dislike = req.body.dislike;
+
+    const pool = new Pool(poolConfig)
+
+    // push the tags
+    let result = await pool.query(`SELECT * from likes WHERE image_id = '${image_id}' AND username = '${username}'`);
+    console.log("query1")
+    if (result.rowCount !== 1) {
+        console.log("query new row")
+        result = await pool.query('INSERT INTO likes (image_id, username, liked, disliked) VALUES' + `('${image_id}','${username}','${like}','${dislike}')`);
+        console.log("query row inserted")
+    } else {
+        result = await pool.query(`UPDATE likes SET liked = ${like}, disliked = ${dislike} WHERE image_id = '${image_id}' AND username = '${username}'`);
+        console.log("query row edited")
+    }
+    
     pool.end()
     res.header("Access-Control-Allow-Origin", "*");
     res.send("success")
@@ -180,13 +258,13 @@ async function search(text, sortBy, user) {
     //let query = 'SELECT * from images';
     let query = `SELECT images.*, (
         SELECT COUNT(*) from likes
-    WHERE likes."like" = true
+    WHERE likes."liked" = true
     AND likes.image_id = images.image_id) as likes,
         (SELECT COUNT(*) from likes
-    WHERE likes.dislike = true
+    WHERE likes.disliked = true
     AND likes.image_id = images.image_id) as dislikes,
         (SELECT COUNT(*) from likes
-    WHERE (likes."like" = true OR likes.dislike = true)
+    WHERE (likes."liked" = true OR likes.disliked = true)
     AND likes.image_id = images.image_id) as controversy
     from images`
     if (sortBy === "newest") {
@@ -197,8 +275,10 @@ async function search(text, sortBy, user) {
         query += ' ORDER BY controversy DESC';
     }
     const answer = await pool.query(query);
+
+    const tags = await pool.query('SELECT image_tags.image_id, tags.tag_name from image_tags, tags where image_tags.tag_id = tags.tag_id')
     pool.end()
-    return answer.rows;
+    return { image_rows: answer.rows, tags: tags.rows };
 }
 
 async function imagesWithComments() {

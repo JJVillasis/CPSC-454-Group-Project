@@ -57,12 +57,15 @@ export default {
     let post = reactive({
       imgUrl: null,
       caption: "No image",
+      tags: "",
       username: CognitoAuth.getCurrentUser().getUsername()
     })
 
     let caption = reactive({
       text: ""
     })
+
+    let tags = reactive({ text:"" })
 
     function addPhoto() {
       CognitoAuth.getIdToken(function (err, token) {
@@ -115,7 +118,8 @@ export default {
                 axios.post("http://localhost:3000/addimage", {
                   "objectId": photoKey,
                   "username": CognitoAuth.getCurrentUser().getUsername(),
-                  "caption": caption.text
+                  "caption": caption.text,
+                  "tags": tags.text
                 }, {
                   params: { },
                   headers: {
@@ -170,6 +174,7 @@ export default {
       post,
       state,
       caption,
+      tags,
       upload,
       ...rest
     };
@@ -205,6 +210,7 @@ export default {
     <div v-if="state.files.length > 0">
       <h4 class="upload-wrapper">You have chosen a file</h4>
       Caption:<input v-model="caption.text" placeholder="enter caption here" />
+      Tags:<input v-model="tags.text" placeholder="enter tags here" />
       <button class="btn btn-info" v-on:click="upload">Upload
       </button>
       <post-component :post="post" v-bind:key="post"/>

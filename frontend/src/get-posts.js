@@ -16,9 +16,14 @@ const getPosts = (names, start, number) => {
     ret.push({
       imgURL: lastNames[i].imgURL, // this should the actual index
       caption: lastNames[i].title,
-      username: lastNames[i].username
+      username: lastNames[i].username,
+      likes: lastNames[i].likes,
+      dislikes: lastNames[i].dislikes,
+      tags: lastNames[i].tags,
+      image_id: lastNames[i].image_id
     })
   }
+  console.log(ret)
   return ret
 }
 export default getPosts
