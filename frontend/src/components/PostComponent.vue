@@ -46,8 +46,8 @@
                   axios.post("http://localhost:3000/like", {
                       "image_id": this.post.image_id,
                       "username": CognitoAuth.getCurrentUser().getUsername(),
-                      "like": this.Like === "Like",
-                      "dislike": this.Dislike === "Dislike"
+                      "like": this.Like === "Liked",
+                      "dislike": this.Dislike === "Disliked"
                   }, {
                       params: {},
                       headers: {

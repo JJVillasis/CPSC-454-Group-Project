@@ -49,6 +49,18 @@ app.get('/listall', async (req, res) => {
     res.send(imageList)
 })
 
+async function getLikesForUser(username) {
+    if (username === undefined) {
+        return []
+    }
+    console.log(poolConfig + " " + configTwo);
+    const pool = new Pool(poolConfig)
+    const answer = await pool.query(`SELECT * from likes WHERE username = '${username}'`);
+    console.log(answer.rows);
+    pool.end()
+    return answer.rows;
+}
+
 // search?
 //    text=   search text
 //    sortby= newest, controversial, viral
@@ -57,6 +69,8 @@ app.get('/listall', async (req, res) => {
 app.get('/search', async (req, res) => {
     const { image_rows, tags } = await search(req.query.text, req.query.sortby, req.query.user);
     const imageList = [];
+    let userLikes = await getLikesForUser(req.query.currentuser);
+    console.log(req.query.currentuser + ": " + userLikes);
     for (let i = 0; i < image_rows.length; ++i) {
         let theTags = []
         for (let key in tags) {
@@ -71,7 +85,10 @@ app.get('/search', async (req, res) => {
             username: image_rows[i].username,
             likes: image_rows[i].likes,
             dislikes: image_rows[i].dislikes,
-            tags: theTags
+            tags: theTags,
+            userLikes: userLikes.find( (it) => {
+                return it.image_id === image_rows[i].image_id
+            })
         }
         imageList.push(image);
     }
@@ -251,28 +268,32 @@ async function db() {
  * @returns {Promise<*>}
  */
 
-async function search(text, sortBy, user) {
-    //console.log(poolConfig + " " + configTwo);
-    console.log("text=" + text + " sortBy=" + sortBy + " user=" + user);
+async function search(text, sortBy, user, image_id) {
+    console.log("text=" + text + " sortBy=" + sortBy + " user=" + user + " selected image=" + image_id);
     const pool = new Pool(poolConfig);
-    //let query = 'SELECT * from images';
-    let query = `SELECT images.*, (
-        SELECT COUNT(*) from likes
-    WHERE likes."liked" = true
-    AND likes.image_id = images.image_id) as likes,
+
+    let query = `SELECT images.*, 
         (SELECT COUNT(*) from likes
-    WHERE likes.disliked = true
-    AND likes.image_id = images.image_id) as dislikes,
+            WHERE likes."liked" = true
+            AND likes.image_id = images.image_id) as likes,
         (SELECT COUNT(*) from likes
-    WHERE (likes."liked" = true OR likes.disliked = true)
-    AND likes.image_id = images.image_id) as controversy
+            WHERE likes.disliked = true
+            AND likes.image_id = images.image_id) as dislikes,
+        (SELECT COUNT(*) from likes
+            WHERE (likes."liked" = true OR likes.disliked = true)
+            AND likes.image_id = images.image_id) as controversy
     from images`
-    if (sortBy === "newest") {
-        query += ' ORDER BY image_date DESC';
-    } else if (sortBy === "viral") {
-        query += ' ORDER BY likes DESC';
-    } else if (sortBy === "controversial") {
-        query += ' ORDER BY controversy DESC';
+
+    if (image_id !== undefined && image_id !== null) {
+        query += ` WHERE image_id = ${image_id}`
+    } else {
+        if (sortBy === "newest") {
+            query += ' ORDER BY image_date DESC';
+        } else if (sortBy === "viral") {
+            query += ' ORDER BY likes DESC';
+        } else if (sortBy === "controversial") {
+            query += ' ORDER BY controversy DESC';
+        }
     }
     const answer = await pool.query(query);
 
