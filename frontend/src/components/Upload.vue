@@ -50,6 +50,10 @@ export default {
 
     let tags = reactive({ text:"" })
 
+    function getBackendUrl() {
+      return config.prod ? config.backendProd : config.backendLocal;
+    }
+
     function addPhoto() {
       CognitoAuth.getIdToken(function (err, token) {
         if (err) {
@@ -98,7 +102,7 @@ export default {
               function (data) {
                 console.log("Successfully uploaded photo: " + data.Location);
                 alert("Successfully Uploaded photo: " + data.Key);
-                axios.post("http://localhost:3000/addimage", {
+                axios.post(getBackendUrl() + "/addimage", {
                   "objectId": photoKey,
                   "username": CognitoAuth.getCurrentUser().getUsername(),
                   "caption": caption.text,

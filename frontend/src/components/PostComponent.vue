@@ -47,7 +47,7 @@
                   return config.prod ? config.backendProd : config.backendLocal;
               },
               import_like: function () {
-                  axios.post("http://localhost:3000/like", {
+                  axios.post(this.getBackendUrl() + "/like", {
                       "image_id": this.post.image_id,
                       "username": CognitoAuth.getCurrentUser().getUsername(),
                       "like": this.Like === "Liked",
