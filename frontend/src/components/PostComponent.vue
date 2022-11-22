@@ -38,7 +38,11 @@
      props: {
       post: Object
      },
-          methods: {
+    mounted() {
+      this.Like = this.post.userLikes !== undefined ? (this.post.userLikes.liked ? "Liked" : "Like") : "Like";
+      this.Dislike =  this.post.userLikes !== undefined ? (this.post.userLikes.disliked ? "Disliked" : "Dislike"): "Dislike";
+    },
+    methods: {
               getBackendUrl: function () {
                   return config.prod ? config.backendProd : config.backendLocal;
               },
