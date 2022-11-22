@@ -67,7 +67,7 @@ async function getLikesForUser(username) {
 //    user=   username
 
 app.get('/search', async (req, res) => {
-    const { image_rows, tags } = await search(req.query.text, req.query.sortby, req.query.user);
+    const { image_rows, tags } = await search(req.query.text, req.query.sortby, req.query.user, req.query.image_id);
     const imageList = [];
     let userLikes = await getLikesForUser(req.query.currentuser);
     console.log(req.query.currentuser + ": " + userLikes);
@@ -139,7 +139,7 @@ app.post('/addimage', async (req, res) => {
     for (let key = 0; key < tagList.length; ++key) {
         console.log(`SELECT * from tags WHERE tag_name = '${tagList[key]}'`);
         let result = await pool.query(`SELECT * from tags WHERE tag_name = '${tagList[key]}'`);
-        //console.log("result = " + result.rows[0].tag_id)
+
         let tag_id;
         if (result.rowCount !== 1) {
             result = await pool.query(`INSERT INTO tags (tag_name) VALUES ('${tagList[key]}') RETURNING tag_id`);
@@ -186,6 +186,30 @@ app.post('/like', async (req, res) => {
         console.log("query row edited")
     }
     
+    pool.end()
+    res.header("Access-Control-Allow-Origin", "*");
+    res.send("success")
+})
+
+app.post('/comment', async (req, res) => {
+    console.log(req.body);
+    console.log(req.headers);
+
+    if (req.body === undefined || req.body === {}) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.send("failure")
+    }
+
+    const image_id = req.body.image_id;
+    const username = req.body.username;
+    const commentText = req.body.comment;
+
+    const pool = new Pool(poolConfig)
+
+    let result = await pool.query('INSERT INTO comments (username, comment_date, comment_contents) VALUES' + `('${username}','${new Date().toDateString()}','${commentText}')`);
+
+    let result2 = await pool.query('INSERT INTO image_comments (image_id, comment_id) VALUES' + `('${image_id}','${result.rows[0].comment_id}')`);
+
     pool.end()
     res.header("Access-Control-Allow-Origin", "*");
     res.send("success")
