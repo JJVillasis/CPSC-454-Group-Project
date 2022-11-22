@@ -25,23 +25,6 @@ import {reactive, watch} from 'vue';
 import {useDropzone} from 'vue3-dropzone';
 import PostComponent from "@/components/PostComponent";
 
-//const state = reactive({
-//  files: [],
-//});
-/*
-const {getRootProps, getInputProps, isDragActive, ...rest} = useDropzone({
-  onDrop,
-});*/
-
-
-
-//let Vue = getCurrentInstance();
-
-
-//function handleClickDeleteFile(index) {
-//  state.files.splice(index, 1);
-//}
-
 
 export default {
   // eslint-disable-next-line

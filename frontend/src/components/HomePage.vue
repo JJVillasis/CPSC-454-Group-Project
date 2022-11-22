@@ -32,6 +32,7 @@ import PostComponent from './PostComponent.vue'
 import config from '../config'
 import getPosts from "../get-posts";
 import { ref } from 'vue'
+import CognitoAuth from "../cognito";
 const scrollComponent = ref(null)
 
 export default {
@@ -65,7 +66,8 @@ export default {
           this.text = text;
           this.sortBy = sortby;
           this.username = username;
-          axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username, {
+          let currentUsername = CognitoAuth.getCurrentUser().getUsername();
+          axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username+ "&currentuser="+currentUsername, {
             //We can add more configurations in this object
             params: {
 
@@ -81,7 +83,8 @@ export default {
           window.onscroll = () => {
             let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
             if (bottomOfWindow) {
-              axios.get(this.getBackendUrl() + "/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username, {
+              let currentUsername = CognitoAuth.getCurrentUser().getUsername();
+              axios.get(this.getBackendUrl() + "/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username+ "&currentuser="+currentUsername, {
                 //We can add more configurations in this object
                 params: {
                   //This is one of the many options we can configure
