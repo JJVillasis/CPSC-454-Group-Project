@@ -103,7 +103,15 @@ app.post('/addimage', async (req, res) => {
     if (req.body === undefined || req.body === {}) {
         res.header("Access-Control-Allow-Origin", "*");
         res.send("failure")
+        return;
     }
+
+    if (!await verifyToken2(req.body.jwt)) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.status(400).send("failure")
+        return;
+    }
+
 
     const objectId = req.body.objectId;
     const username = req.body.username;
@@ -164,7 +172,13 @@ app.post('/like', async (req, res) => {
 
     if (req.body === undefined || req.body === {}) {
         res.header("Access-Control-Allow-Origin", "*");
-        res.send("failure")
+        res.status(402).send("failure")
+    }
+
+    if (!await verifyToken2(req.body.jwt)) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.status(400).send("failure")
+        return;
     }
 
     const image_id = req.body.image_id;
@@ -273,6 +287,13 @@ const poolConfig = {
     port: process.env.port,
 };
 
+const verifyConfig = {
+    region: process.env.region,
+    userPoolId: process.env.IdentityPoolId,
+    appClientId: process.env.ClientId,
+    tokenType: 'id', // either "access" or "id"
+}
+
 const {Pool, Client} = require('pg')
 
 async function db() {
@@ -332,4 +353,31 @@ async function imagesWithComments() {
     console.log(answer.rows);
     pool.end()
     return answer.rows;
+}
+
+const {
+    verifierFactory,
+    errors: { JwtVerificationError, JwksNoMatchingKeyError },
+} = require('@southlane/cognito-jwt-verifier')
+
+
+// get a verifier instance. Put your config values here.
+const verifier = verifierFactory(verifyConfig)
+
+async function verifyToken2(token) {
+    try {
+        const tokenPayload = await verifier.verify(token)
+        console.log(tokenPayload)
+        return true
+    } catch (e) {
+        if (
+            e instanceof JwtVerificationError ||
+            e instanceof JwksNoMatchingKeyError
+        ) {
+            // token is malformed, invalid, expired or cannot be validated with known keys
+            // act accordingly, e.g. return HTTP 401 error
+        }
+
+        return false
+    }
 }

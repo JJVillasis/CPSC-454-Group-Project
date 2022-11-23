@@ -47,18 +47,27 @@
                   return config.prod ? config.backendProd : config.backendLocal;
               },
               import_like: function () {
-                  axios.post(this.getBackendUrl() + "/like", {
-                      "image_id": this.post.image_id,
+                let myThis = this;
+                CognitoAuth.getIdToken(function (err, token) {
+                  if (err) {
+                    return alert("There was an error with your account: " + err.message);
+
+                  } else {
+                    axios.post(myThis.getBackendUrl() + "/like", {
+                      "image_id": myThis.post.image_id,
                       "username": CognitoAuth.getCurrentUser().getUsername(),
-                      "like": this.Like === "Liked",
-                      "dislike": this.Dislike === "Disliked"
-                  }, {
+                      "like": myThis.Like === "Liked",
+                      "dislike": myThis.Dislike === "Disliked",
+                      "jwt": token
+                    }, {
                       params: {},
                       headers: {
-                          "Access-Control-Allow-Origin": "*",
-                          'Content-Type': 'application/json',
+                        "Access-Control-Allow-Origin": "*",
+                        'Content-Type': 'application/json',
                       }
-                  })
+                    })
+                  }
+                })
               },
               like_button: function () {
                   console.log("Clicked Like");

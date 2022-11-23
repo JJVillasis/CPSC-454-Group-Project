@@ -106,7 +106,8 @@ export default {
                   "objectId": photoKey,
                   "username": CognitoAuth.getCurrentUser().getUsername(),
                   "caption": caption.text,
-                  "tags": tags.text
+                  "tags": tags.text,
+                  "jwt" : token
                 }, {
                   params: { },
                   headers: {
