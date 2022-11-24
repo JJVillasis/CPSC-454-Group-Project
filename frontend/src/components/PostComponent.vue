@@ -17,6 +17,13 @@
                   {{Like}}
               </button>
           </div>
+          <div class ="row">
+            <p v-for="comment in post.comments" :post="comment" v-bind:key="comment">
+              {{comment.username}} {{new Date(comment.comment_date).toLocaleString()}}
+              <br>
+              {{comment.comment_contents}}
+            </p>
+          </div>
         </div>
     </div>
   </template>

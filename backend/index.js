@@ -61,21 +61,84 @@ async function getLikesForUser(username) {
     return answer.rows;
 }
 
+let commentCache = null;
+
+async function getComments(pool) {
+    if (commentCache !== null)
+        return commentCache
+    const answer = await pool.query(`SELECT * from comments`);
+    console.log(answer.rows);
+    commentCache = {}
+    for (let row of answer.rows) {
+        commentCache[row.comment_id] = row;
+    }
+    return commentCache;
+}
+
+let commentsForImageCache = null
+
+async function getCommentsForImage(pool, image_id) {
+
+    if (commentsForImageCache !== null && commentsForImageCache[image_id] !== undefined)
+        return commentsForImageCache[image_id];
+
+    const answer = await pool.query(`SELECT * from image_comments WHERE image_id = ${image_id}`);
+
+    console.log(answer.rows);
+    if (commentsForImageCache === null) {
+        commentsForImageCache = {}
+    }
+    commentsForImageCache[image_id] = answer.rows;
+    return answer.rows;
+}
+
+let commentsPerImageCache = null
+
+async function getCommentsPerImage(pool, image_id) {
+
+    if (commentsPerImageCache !== null && commentsPerImageCache[image_id] !== undefined)
+        return commentsPerImageCache[image_id];
+
+    const answer = await pool.query(`SELECT * from image_comments`);
+
+    if (commentsPerImageCache === null) {
+        commentsPerImageCache = {}
+    }
+    for (let i = 0; i < answer.rowCount; ++i) {
+        const row_image_id = answer.rows[i].image_id
+        if (commentsPerImageCache[row_image_id] === undefined)
+            commentsPerImageCache[row_image_id] = [];
+        if (commentsPerImageCache[row_image_id].indexOf(answer.rows[i].comment_id) === -1)
+            commentsPerImageCache[row_image_id].push(answer.rows[i].comment_id)
+    }
+    return commentsPerImageCache[image_id];
+}
+
 // search?
 //    text=   search text
 //    sortby= newest, controversial, viral
 //    user=   username
 
 app.get('/search', async (req, res) => {
-    const { image_rows, tags } = await search(req.query.text, req.query.sortby, req.query.user, req.query.image_id);
+    const pool = new Pool(poolConfig);
+
+    const { image_rows, tags } = await search(pool, req.query.text, req.query.sortby, req.query.user, req.query.image_id);
     const imageList = [];
-    let userLikes = await getLikesForUser(req.query.currentuser);
+    let userLikes = await getLikesForUser(pool, req.query.currentuser);
+    let comments = await getComments(pool);
     console.log(req.query.currentuser + ": " + userLikes);
     for (let i = 0; i < image_rows.length; ++i) {
         let theTags = []
         for (let key in tags) {
             if (image_rows[i].image_id === tags[key].image_id) {
                 theTags.push(tags[key].tag_name.toLowerCase())
+            }
+        }
+        let commentsForImage = []
+        let commentsReThisImage = await getCommentsPerImage(pool, image_rows[i].image_id)
+        if (commentsReThisImage !== undefined) {
+            for (let c = 0; c < commentsReThisImage.length; ++c) {
+                commentsForImage.push(comments[commentsReThisImage[c]]);
             }
         }
         let image = {
@@ -88,10 +151,12 @@ app.get('/search', async (req, res) => {
             tags: theTags,
             userLikes: userLikes.find( (it) => {
                 return it.image_id === image_rows[i].image_id
-            })
+            }),
+            comments: commentsForImage
         }
         imageList.push(image);
     }
+    pool.end()
     res.header("Access-Control-Allow-Origin", "*");
     res.send(imageList)
 })
@@ -313,9 +378,8 @@ async function db() {
  * @returns {Promise<*>}
  */
 
-async function search(text, sortBy, user, image_id) {
+async function search(pool, text, sortBy, user, image_id) {
     console.log("text=" + text + " sortBy=" + sortBy + " user=" + user + " selected image=" + image_id);
-    const pool = new Pool(poolConfig);
 
     let query = `SELECT images.*, 
         (SELECT COUNT(*) from likes
@@ -343,7 +407,6 @@ async function search(text, sortBy, user, image_id) {
     const answer = await pool.query(query);
 
     const tags = await pool.query('SELECT image_tags.image_id, tags.tag_name from image_tags, tags where image_tags.tag_id = tags.tag_id')
-    pool.end()
     return { image_rows: answer.rows, tags: tags.rows };
 }
 

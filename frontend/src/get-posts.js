@@ -23,7 +23,8 @@ const getPosts = (names, start, number) => {
       dislikes: lastNames[i].dislikes,
       tags: lastNames[i].tags,
       image_id: lastNames[i].image_id,
-      userLikes: lastNames[i].userLikes
+      userLikes: lastNames[i].userLikes,
+      comments: lastNames[i].comments
     })
   }
   console.log(ret)

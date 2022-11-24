@@ -83,16 +83,16 @@ export default {
           window.onscroll = () => {
             let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
             if (bottomOfWindow) {
-              let currentUsername = CognitoAuth.getCurrentUser().getUsername();
-              axios.get(this.getBackendUrl() + "/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username+ "&currentuser="+currentUsername, {
+              //let currentUsername = CognitoAuth.getCurrentUser().getUsername();
+              /*axios.get(this.getBackendUrl() + "/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username+ "&currentuser="+currentUsername, {
                 //We can add more configurations in this object
                 params: {
                   //This is one of the many options we can configure
                 }
-              }).then( response => {
-                    this.posts.push(...getPosts(response.data, this.lastItem, 5));
+              }).then( response => {*/
+                    this.posts.push(...getPosts(null, /*response.data,*/ this.lastItem, 5));
                     this.lastItem += 5
-              });
+              //});
             }
           }
         }
