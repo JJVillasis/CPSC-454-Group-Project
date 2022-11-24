@@ -49,15 +49,12 @@ app.get('/listall', async (req, res) => {
     res.send(imageList)
 })
 
-async function getLikesForUser(username) {
+async function getLikesForUser(pool, username) {
     if (username === undefined) {
         return []
     }
     console.log(poolConfig + " " + configTwo);
-    const pool = new Pool(poolConfig)
     const answer = await pool.query(`SELECT * from likes WHERE username = '${username}'`);
-    console.log(answer.rows);
-    pool.end()
     return answer.rows;
 }
 
