@@ -66,7 +66,9 @@ export default {
           this.text = text;
           this.sortBy = sortby;
           this.username = username;
-          let currentUsername = CognitoAuth.getCurrentUser().getUsername();
+          let currentUsername;
+          if (CognitoAuth.getCurrentUser() != null)
+            currentUsername = CognitoAuth.getCurrentUser().getUsername();
           axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username+ "&currentuser="+currentUsername, {
             //We can add more configurations in this object
             params: {

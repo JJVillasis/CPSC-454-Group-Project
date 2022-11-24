@@ -33,7 +33,9 @@
         </button>
         <button v-if="!isLoggedIn()" class="btn btn-info mr-3" type="button"><router-link class="nav-link" to="register">Sign Up</router-link></button>
         <button v-if="!isLoggedIn()" class="btn btn-info" type="button"><router-link class="nav-link" to="login">Sign In</router-link></button>
-        
+        <button v-if="isLoggedIn()" class="btn btn-info">
+          <router-link class="nav-link" to="logout">Sign Out</router-link>
+        </button>
       </div>
     </nav>
   </template>
