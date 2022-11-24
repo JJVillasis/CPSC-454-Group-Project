@@ -128,6 +128,10 @@ app.get('/search', async (req, res) => {
     let comments = await getComments(pool);
     console.log(req.query.currentuser + ": " + userLikes);
     for (let i = 0; i < image_rows.length; ++i) {
+        // check existance of S3 Object
+        if (listS3Objects[image_rows[i].image_object_id] === undefined)
+            continue;
+
         let theTags = []
         for (let key in tags) {
             if (image_rows[i].image_id === tags[key].image_id) {
@@ -312,13 +316,20 @@ const configTwo = {
     region: process.env.region
 }
 
+var listS3Objects = null;
+
 async function list() {
     const client = new S3Client(configTwo);
     const command = new ListObjectsV2Command(params);
     const response = await client.send(command);
-    console.log(response);
+    listS3Objects = {}
+    for (let i = 0; i < response.Contents.length; ++i) {
+        listS3Objects[response.Contents[i].Key] = response.Contents[i];
+    }
     return response;
 }
+
+list().then(r => console.log("successfully loaded S3"));
 
 function requestUploadURL(event, context, callback) {
     var s3 = new AWS.S3();
