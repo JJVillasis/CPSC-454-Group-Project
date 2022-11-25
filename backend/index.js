@@ -404,6 +404,9 @@ async function search(pool, text, sortBy, user, image_id) {
     if (image_id !== undefined && image_id !== null) {
         query += ` WHERE image_id = ${image_id}`
     } else {
+        if (text !== undefined) {
+            query += ` WHERE image_title LIKE '%${text}%'`
+        }
         if (sortBy === "newest") {
             query += ' ORDER BY image_date DESC';
         } else if (sortBy === "viral") {

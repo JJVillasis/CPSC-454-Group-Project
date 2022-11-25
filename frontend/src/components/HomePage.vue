@@ -34,6 +34,7 @@ import getPosts from "../get-posts";
 import { ref } from 'vue'
 import CognitoAuth from "../cognito";
 const scrollComponent = ref(null)
+import { useRouter, useRoute } from 'vue-router'
 
 export default {
     name: 'HomePage',
@@ -46,7 +47,9 @@ export default {
             lastItem: 0,
             text: null,
             sortBy: null,
-            username: null
+            username: null,
+          router: useRouter(),
+          route: useRoute()
         }
     },
     setup() {
@@ -97,13 +100,27 @@ export default {
               //});
             }
           }
-        }
+        },
+      getUrlQueryParams: async function () {
+        //router is async so we wait for it to be ready
+        await this.router.isReady()
+        //once its ready we can access the query params
+        this.text = this.route.query.text
+        console.log("text: " + this.text);
+        this.getdata(this.route.query.text)
+      }
     },
     beforeMount() {
-      this.getdata();
+      //this.getdata();
     },
     mounted() {
         this.getNextData();
+        this.getUrlQueryParams();
+    },
+    beforeRouteUpdate(to, from, next) {
+      console.log("before route update:" + to + "---" + from);
+      this.getdata(to.query.text);
+      next();
     }
 }
 </script>

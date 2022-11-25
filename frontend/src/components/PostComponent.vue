@@ -4,8 +4,8 @@
         <div class="card-body">
           <h5 class="card-title">{{post.caption}}</h5>
           <h6 class="card-user">{{post.username}}</h6>
-          <h5 class="card-likes">Likes: {{post.likes}}</h5>
-          <h5 class="card-likes">Dislikes: {{post.dislikes}}</h5>
+          <h6 class="card-likes">Likes: {{post.likes}}</h6>
+          <h6 class="card-likes">Dislikes: {{post.dislikes}}</h6>
           <div v-for="tag in this.post.tags" :post="tag" v-bind:key="tag">
             <a href="/search?tag={{tag}}">#{{tag}}</a>
           </div>
@@ -17,12 +17,15 @@
                   {{Like}}
               </button>
           </div>
-          <div class ="row">
-            <p v-for="comment in post.comments" :post="comment" v-bind:key="comment">
-              {{comment.username}} {{new Date(comment.comment_date).toLocaleString()}}
-              <br>
-              {{comment.comment_contents}}
-            </p>
+          <div v-if="this.post.comments.length > 0">
+            <div class="container"><h4>Comments</h4>
+              <div v-for="comment in post.comments" :post="comment" v-bind:key="comment">
+                <h6>{{comment.username}}</h6> <h6>{{new Date(comment.comment_date).toLocaleString()}}</h6>
+                <div>
+                  {{comment.comment_contents}}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
     </div>
