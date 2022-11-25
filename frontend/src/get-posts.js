@@ -14,6 +14,8 @@ const getPosts = (names, start, number) => {
   let ret = []
   if (number > lastNames.length)
     number = lastNames.length
+  if (start > number)
+    return ret;
   for (let i = start; i < start + number; i++) {
     ret.push({
       imgURL: lastNames[i].imgURL, // this should the actual index

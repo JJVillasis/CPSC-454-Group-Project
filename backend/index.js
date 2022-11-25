@@ -159,7 +159,7 @@ app.get('/search', async (req, res) => {
     }
     pool.end()
     res.header("Access-Control-Allow-Origin", "*");
-    res.send(imageList)
+    res.status(200).send(imageList)
 })
 
 app.post('/addimage', async (req, res) => {
@@ -277,7 +277,7 @@ app.post('/comment', async (req, res) => {
 
     if (req.body === undefined || req.body === {}) {
         res.header("Access-Control-Allow-Origin", "*");
-        res.send("failure")
+        res.status(402).send("failure")
     }
 
     const image_id = req.body.image_id;
@@ -292,7 +292,7 @@ app.post('/comment', async (req, res) => {
 
     pool.end()
     res.header("Access-Control-Allow-Origin", "*");
-    res.send("success")
+    res.status(200).send("success")
 })
 
 const AWS = require('aws-sdk');
@@ -404,7 +404,7 @@ async function search(pool, text, sortBy, user, image_id) {
     if (image_id !== undefined && image_id !== null) {
         query += ` WHERE image_id = ${image_id}`
     } else {
-        if (text !== undefined) {
+        if (text !== undefined && text !== "undefined" && text !== '') {
             query += ` WHERE image_title LIKE '%${text}%'`
         }
         if (sortBy === "newest") {
