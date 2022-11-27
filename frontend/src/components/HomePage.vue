@@ -32,7 +32,9 @@ import PostComponent from './PostComponent.vue'
 import config from '../config'
 import getPosts from "../get-posts";
 import { ref } from 'vue'
+import CognitoAuth from "../cognito";
 const scrollComponent = ref(null)
+import { useRouter, useRoute } from 'vue-router'
 
 export default {
     name: 'HomePage',
@@ -45,7 +47,9 @@ export default {
             lastItem: 0,
             text: null,
             sortBy: null,
-            username: null
+            username: null,
+          router: useRouter(),
+          route: useRoute()
         }
     },
     setup() {
@@ -65,7 +69,10 @@ export default {
           this.text = text;
           this.sortBy = sortby;
           this.username = username;
-          axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username, {
+          let currentUsername;
+          if (CognitoAuth.getCurrentUser() != null)
+            currentUsername = CognitoAuth.getCurrentUser().getUsername();
+          axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username+ "&currentuser="+currentUsername, {
             //We can add more configurations in this object
             params: {
 
@@ -81,24 +88,40 @@ export default {
           window.onscroll = () => {
             let bottomOfWindow = document.documentElement.scrollTop + window.innerHeight === document.documentElement.offsetHeight;
             if (bottomOfWindow) {
-              axios.get(this.getBackendUrl() + "/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username, {
+              //let currentUsername = CognitoAuth.getCurrentUser().getUsername();
+              /*axios.get(this.getBackendUrl() + "/search?text=" + this.text + "&sortby=" + this.sortBy + "&user="+this.username+ "&currentuser="+currentUsername, {
                 //We can add more configurations in this object
                 params: {
                   //This is one of the many options we can configure
                 }
-              }).then( response => {
-                    this.posts.push(...getPosts(response.data, this.lastItem, 5));
+              }).then( response => {*/
+                    this.posts.push(...getPosts(null, /*response.data,*/ this.lastItem, 5));
                     this.lastItem += 5
-              });
+              //});
             }
           }
-        }
+        },
+      getUrlQueryParams: async function () {
+        //router is async so we wait for it to be ready
+        await this.router.isReady()
+        //once its ready we can access the query params
+        this.text = this.route.query.text
+        console.log("text: " + this.text);
+        this.getdata(this.route.query.text)
+      }
     },
     beforeMount() {
-      this.getdata();
+      //this.getdata();
     },
     mounted() {
         this.getNextData();
+        this.getUrlQueryParams();
+    },
+    beforeRouteUpdate(to, from, next) {
+      console.log("before route update:" + to + "---" + from);
+      if (to.query.text !== undefined && to.query.text !== null)
+        this.getdata(to.query.text);
+      next();
     }
 }
 </script>

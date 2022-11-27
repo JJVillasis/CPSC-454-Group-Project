@@ -49,19 +49,97 @@ app.get('/listall', async (req, res) => {
     res.send(imageList)
 })
 
+async function getLikesForUser(pool, username) {
+    if (username === undefined) {
+        return []
+    }
+    console.log(poolConfig + " " + configTwo);
+    const answer = await pool.query(`SELECT * from likes WHERE username = '${username}'`);
+    return answer.rows;
+}
+
+let commentCache = null;
+
+async function getComments(pool) {
+    if (commentCache !== null)
+        return commentCache
+    const answer = await pool.query(`SELECT * from comments`);
+    console.log(answer.rows);
+    commentCache = {}
+    for (let row of answer.rows) {
+        commentCache[row.comment_id] = row;
+    }
+    return commentCache;
+}
+
+let commentsForImageCache = null
+
+async function getCommentsForImage(pool, image_id) {
+
+    if (commentsForImageCache !== null && commentsForImageCache[image_id] !== undefined)
+        return commentsForImageCache[image_id];
+
+    const answer = await pool.query(`SELECT * from image_comments WHERE image_id = ${image_id}`);
+
+    console.log(answer.rows);
+    if (commentsForImageCache === null) {
+        commentsForImageCache = {}
+    }
+    commentsForImageCache[image_id] = answer.rows;
+    return answer.rows;
+}
+
+let commentsPerImageCache = null
+
+async function getCommentsPerImage(pool, image_id) {
+
+    if (commentsPerImageCache !== null && commentsPerImageCache[image_id] !== undefined)
+        return commentsPerImageCache[image_id];
+
+    const answer = await pool.query(`SELECT * from image_comments`);
+
+    if (commentsPerImageCache === null) {
+        commentsPerImageCache = {}
+    }
+    for (let i = 0; i < answer.rowCount; ++i) {
+        const row_image_id = answer.rows[i].image_id
+        if (commentsPerImageCache[row_image_id] === undefined)
+            commentsPerImageCache[row_image_id] = [];
+        if (commentsPerImageCache[row_image_id].indexOf(answer.rows[i].comment_id) === -1)
+            commentsPerImageCache[row_image_id].push(answer.rows[i].comment_id)
+    }
+    return commentsPerImageCache[image_id];
+}
+
 // search?
 //    text=   search text
 //    sortby= newest, controversial, viral
 //    user=   username
 
 app.get('/search', async (req, res) => {
-    const { image_rows, tags } = await search(req.query.text, req.query.sortby, req.query.user);
+    const pool = new Pool(poolConfig);
+
+    const { image_rows, tags } = await search(pool, req.query.text, req.query.sortby, req.query.user, req.query.image_id);
     const imageList = [];
+    let userLikes = await getLikesForUser(pool, req.query.currentuser);
+    let comments = await getComments(pool);
+    console.log(req.query.currentuser + ": " + userLikes);
     for (let i = 0; i < image_rows.length; ++i) {
+        // check existance of S3 Object
+        if (listS3Objects[image_rows[i].image_object_id] === undefined)
+            continue;
+
         let theTags = []
         for (let key in tags) {
             if (image_rows[i].image_id === tags[key].image_id) {
                 theTags.push(tags[key].tag_name.toLowerCase())
+            }
+        }
+        let commentsForImage = []
+        let commentsReThisImage = await getCommentsPerImage(pool, image_rows[i].image_id)
+        if (commentsReThisImage !== undefined) {
+            for (let c = 0; c < commentsReThisImage.length; ++c) {
+                commentsForImage.push(comments[commentsReThisImage[c]]);
             }
         }
         let image = {
@@ -71,12 +149,17 @@ app.get('/search', async (req, res) => {
             username: image_rows[i].username,
             likes: image_rows[i].likes,
             dislikes: image_rows[i].dislikes,
-            tags: theTags
+            tags: theTags,
+            userLikes: userLikes.find( (it) => {
+                return it.image_id === image_rows[i].image_id
+            }),
+            comments: commentsForImage
         }
         imageList.push(image);
     }
+    pool.end()
     res.header("Access-Control-Allow-Origin", "*");
-    res.send(imageList)
+    res.status(200).send(imageList)
 })
 
 app.post('/addimage', async (req, res) => {
@@ -86,7 +169,15 @@ app.post('/addimage', async (req, res) => {
     if (req.body === undefined || req.body === {}) {
         res.header("Access-Control-Allow-Origin", "*");
         res.send("failure")
+        return;
     }
+
+    if (!await verifyToken2(req.body.jwt)) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.status(400).send("failure")
+        return;
+    }
+
 
     const objectId = req.body.objectId;
     const username = req.body.username;
@@ -122,7 +213,7 @@ app.post('/addimage', async (req, res) => {
     for (let key = 0; key < tagList.length; ++key) {
         console.log(`SELECT * from tags WHERE tag_name = '${tagList[key]}'`);
         let result = await pool.query(`SELECT * from tags WHERE tag_name = '${tagList[key]}'`);
-        //console.log("result = " + result.rows[0].tag_id)
+
         let tag_id;
         if (result.rowCount !== 1) {
             result = await pool.query(`INSERT INTO tags (tag_name) VALUES ('${tagList[key]}') RETURNING tag_id`);
@@ -147,7 +238,13 @@ app.post('/like', async (req, res) => {
 
     if (req.body === undefined || req.body === {}) {
         res.header("Access-Control-Allow-Origin", "*");
-        res.send("failure")
+        res.status(402).send("failure")
+    }
+
+    if (!await verifyToken2(req.body.jwt)) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.status(400).send("failure")
+        return;
     }
 
     const image_id = req.body.image_id;
@@ -174,6 +271,30 @@ app.post('/like', async (req, res) => {
     res.send("success")
 })
 
+app.post('/comment', async (req, res) => {
+    console.log(req.body);
+    console.log(req.headers);
+
+    if (req.body === undefined || req.body === {}) {
+        res.header("Access-Control-Allow-Origin", "*");
+        res.status(402).send("failure")
+    }
+
+    const image_id = req.body.image_id;
+    const username = req.body.username;
+    const commentText = req.body.comment;
+
+    const pool = new Pool(poolConfig)
+
+    let result = await pool.query('INSERT INTO comments (username, comment_date, comment_contents) VALUES' + `('${username}','${new Date().toDateString()}','${commentText}')`);
+
+    let result2 = await pool.query('INSERT INTO image_comments (image_id, comment_id) VALUES' + `('${image_id}','${result.rows[0].comment_id}')`);
+
+    pool.end()
+    res.header("Access-Control-Allow-Origin", "*");
+    res.status(200).send("success")
+})
+
 const AWS = require('aws-sdk');
 const {S3Client, ListObjectsV2Command} = require("@aws-sdk/client-s3"); // CommonJS import
 
@@ -192,13 +313,20 @@ const configTwo = {
     region: process.env.region
 }
 
+var listS3Objects = null;
+
 async function list() {
     const client = new S3Client(configTwo);
     const command = new ListObjectsV2Command(params);
     const response = await client.send(command);
-    console.log(response);
+    listS3Objects = {}
+    for (let i = 0; i < response.Contents.length; ++i) {
+        listS3Objects[response.Contents[i].Key] = response.Contents[i];
+    }
     return response;
 }
+
+list().then(r => console.log("successfully loaded S3"));
 
 function requestUploadURL(event, context, callback) {
     var s3 = new AWS.S3();
@@ -232,6 +360,13 @@ const poolConfig = {
     port: process.env.port,
 };
 
+const verifyConfig = {
+    region: process.env.region,
+    userPoolId: process.env.IdentityPoolId,
+    appClientId: process.env.ClientId,
+    tokenType: 'id', // either "access" or "id"
+}
+
 const {Pool, Client} = require('pg')
 
 async function db() {
@@ -251,33 +386,55 @@ async function db() {
  * @returns {Promise<*>}
  */
 
-async function search(text, sortBy, user) {
-    //console.log(poolConfig + " " + configTwo);
-    console.log("text=" + text + " sortBy=" + sortBy + " user=" + user);
-    const pool = new Pool(poolConfig);
-    //let query = 'SELECT * from images';
-    let query = `SELECT images.*, (
-        SELECT COUNT(*) from likes
-    WHERE likes."liked" = true
-    AND likes.image_id = images.image_id) as likes,
+async function search(pool, text, sortBy, user, image_id) {
+    console.log("text=" + text + " sortBy=" + sortBy + " user=" + user + " selected image=" + image_id);
+
+    let query = `SELECT images.*, 
         (SELECT COUNT(*) from likes
-    WHERE likes.disliked = true
-    AND likes.image_id = images.image_id) as dislikes,
+            WHERE likes."liked" = true
+            AND likes.image_id = images.image_id) as likes,
         (SELECT COUNT(*) from likes
-    WHERE (likes."liked" = true OR likes.disliked = true)
-    AND likes.image_id = images.image_id) as controversy
+            WHERE likes.disliked = true
+            AND likes.image_id = images.image_id) as dislikes,
+        (SELECT COUNT(*) from likes
+            WHERE (likes."liked" = true OR likes.disliked = true)
+            AND likes.image_id = images.image_id) as controversy
     from images`
-    if (sortBy === "newest") {
-        query += ' ORDER BY image_date DESC';
-    } else if (sortBy === "viral") {
-        query += ' ORDER BY likes DESC';
-    } else if (sortBy === "controversial") {
-        query += ' ORDER BY controversy DESC';
+
+    let hasWhere = false;
+    if (user !== undefined && user !== null && user !== 'undefined') {
+        query += ` WHERE username = '${user}'`
+        hasWhere = true;
     }
+
+    if (image_id !== undefined && image_id !== null) {
+        if (!hasWhere) {
+            query += ' WHERE '
+        } else {
+            query += ' AND '
+        }
+        query += `image_id = ${image_id}`
+    } else {
+        if (text !== undefined && text !== "undefined" && text !== '' && text !== 'null' && text !== null) {
+            if (!hasWhere) {
+                query += ' WHERE '
+            } else {
+                query += ' AND '
+            }
+            query += `image_title LIKE '%${text}%'`
+        }
+        if (sortBy === "newest") {
+            query += ' ORDER BY image_date DESC';
+        } else if (sortBy === "viral") {
+            query += ' ORDER BY likes DESC';
+        } else if (sortBy === "controversial") {
+            query += ' ORDER BY controversy DESC';
+        }
+    }
+    console.log(query);
     const answer = await pool.query(query);
 
     const tags = await pool.query('SELECT image_tags.image_id, tags.tag_name from image_tags, tags where image_tags.tag_id = tags.tag_id')
-    pool.end()
     return { image_rows: answer.rows, tags: tags.rows };
 }
 
@@ -287,4 +444,31 @@ async function imagesWithComments() {
     console.log(answer.rows);
     pool.end()
     return answer.rows;
+}
+
+const {
+    verifierFactory,
+    errors: { JwtVerificationError, JwksNoMatchingKeyError },
+} = require('@southlane/cognito-jwt-verifier')
+
+
+// get a verifier instance. Put your config values here.
+const verifier = verifierFactory(verifyConfig)
+
+async function verifyToken2(token) {
+    try {
+        const tokenPayload = await verifier.verify(token)
+        console.log(tokenPayload)
+        return true
+    } catch (e) {
+        if (
+            e instanceof JwtVerificationError ||
+            e instanceof JwksNoMatchingKeyError
+        ) {
+            // token is malformed, invalid, expired or cannot be validated with known keys
+            // act accordingly, e.g. return HTTP 401 error
+        }
+
+        return false
+    }
 }

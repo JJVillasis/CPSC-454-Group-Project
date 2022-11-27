@@ -25,23 +25,6 @@ import {reactive, watch} from 'vue';
 import {useDropzone} from 'vue3-dropzone';
 import PostComponent from "@/components/PostComponent";
 
-//const state = reactive({
-//  files: [],
-//});
-/*
-const {getRootProps, getInputProps, isDragActive, ...rest} = useDropzone({
-  onDrop,
-});*/
-
-
-
-//let Vue = getCurrentInstance();
-
-
-//function handleClickDeleteFile(index) {
-//  state.files.splice(index, 1);
-//}
-
 
 export default {
   // eslint-disable-next-line
@@ -66,6 +49,10 @@ export default {
     })
 
     let tags = reactive({ text:"" })
+
+    function getBackendUrl() {
+      return config.prod ? config.backendProd : config.backendLocal;
+    }
 
     function addPhoto() {
       CognitoAuth.getIdToken(function (err, token) {
@@ -115,11 +102,12 @@ export default {
               function (data) {
                 console.log("Successfully uploaded photo: " + data.Location);
                 alert("Successfully Uploaded photo: " + data.Key);
-                axios.post("http://localhost:3000/addimage", {
+                axios.post(getBackendUrl() + "/addimage", {
                   "objectId": photoKey,
                   "username": CognitoAuth.getCurrentUser().getUsername(),
                   "caption": caption.text,
-                  "tags": tags.text
+                  "tags": tags.text,
+                  "jwt" : token
                 }, {
                   params: { },
                   headers: {

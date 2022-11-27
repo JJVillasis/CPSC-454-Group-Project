@@ -54,7 +54,7 @@ const routes = [
   { path: '/:id', component: Single },
   { path: '/upload', component: Upload, beforeEnter: requireAuth },
 
-  { path: '/logout', beforeEnter: logout }
+  { path: '/logout', beforeEnter: logout },
 ];
 
 const router = createRouter({

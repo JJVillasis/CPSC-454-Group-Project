@@ -12,6 +12,10 @@ const getPosts = (names, start, number) => {
     lastNames = names; // save database query results for later
 
   let ret = []
+  if (number > lastNames.length)
+    number = lastNames.length
+  if (start > number)
+    return ret;
   for (let i = start; i < start + number; i++) {
     ret.push({
       imgURL: lastNames[i].imgURL, // this should the actual index
@@ -20,7 +24,9 @@ const getPosts = (names, start, number) => {
       likes: lastNames[i].likes,
       dislikes: lastNames[i].dislikes,
       tags: lastNames[i].tags,
-      image_id: lastNames[i].image_id
+      image_id: lastNames[i].image_id,
+      userLikes: lastNames[i].userLikes,
+      comments: lastNames[i].comments
     })
   }
   console.log(ret)
