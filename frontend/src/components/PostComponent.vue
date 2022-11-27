@@ -1,6 +1,8 @@
 <template>
     <div class="card">
-      <img class="card-img-top" :src="post.imgURL" alt="">
+      <router-link :to="`/${post.image_id}`">
+        <img class="card-img-top" :src="post.imgURL" alt="">
+      </router-link>
         <div class="card-body">
           <h5 class="card-title">{{post.caption}}</h5>
           <h6 class="card-user">{{post.username}}</h6>
@@ -17,7 +19,7 @@
                   {{Like}}
               </button>
           </div>
-          <div v-if="this.post.comments.length > 0">
+          <div v-if="this.post.comments !== undefined && this.post.comments.length > 0">
             <div class="container"><h4>Comments</h4>
               <div v-for="comment in post.comments" :post="comment" v-bind:key="comment">
                 <h6>{{comment.username}}</h6> <h6>{{new Date(comment.comment_date).toLocaleString()}}</h6>
