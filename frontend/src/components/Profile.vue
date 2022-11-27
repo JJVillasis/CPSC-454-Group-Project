@@ -1,9 +1,6 @@
 <template>
     <div>
-        <h2>Profile Placeholder</h2>
-      Put other profile stuff here.
-
-      Images uploaded by this user are below:
+      <h2>{{this.username}}</h2>
     </div>
 
   <div class="scrolling-component" ref="scrollComponent">
@@ -24,6 +21,8 @@ import config from '../config'
 import getPosts from "../get-posts";
 import { ref } from 'vue'
 const scrollComponent = ref(null)
+
+//var username = CognitoAuth.getCurrentUser().getUsername()
 
 export default {
     // eslint-disable-next-line
@@ -98,5 +97,13 @@ export default {
 </script>
 
 <style scoped>
+body {
+  background-color: #F4f4F4;
+}
 
+.row {
+  display: flex;
+  justify-content: center;
+  margin: auto 0;
+}
 </style>
