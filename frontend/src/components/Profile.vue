@@ -64,8 +64,8 @@ export default {
           //This is one of the many options we can configure
         }
       }).then( response => {
-            this.posts = getPosts(response.data, 0, 5);
-            this.lastItem = 5
+            this.posts = getPosts(response.data, 0, 10);
+            this.lastItem = 10
           }
       );
     },
@@ -79,8 +79,8 @@ export default {
               //This is one of the many options we can configure
             }
           }).then( response => {
-            this.posts.push(...getPosts(response.data, this.lastItem, 5));
-            this.lastItem += 5
+            this.posts.push(...getPosts(response.data, this.lastItem, 10));
+            this.lastItem += 10
           });
         }
       }
@@ -89,7 +89,7 @@ export default {
   beforeMount() {
     this.username = CognitoAuth.getCurrentUser().getUsername();
     this.sortBy = "newest"
-    this.getdata();
+    this.getdata(undefined, this.sortBy, this.username);
   },
   mounted() {
     this.getNextData();

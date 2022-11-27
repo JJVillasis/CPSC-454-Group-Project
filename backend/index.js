@@ -401,11 +401,27 @@ async function search(pool, text, sortBy, user, image_id) {
             AND likes.image_id = images.image_id) as controversy
     from images`
 
+    let hasWhere = false;
+    if (user !== undefined && user !== null && user !== 'undefined') {
+        query += ` WHERE username = '${user}'`
+        hasWhere = true;
+    }
+
     if (image_id !== undefined && image_id !== null) {
-        query += ` WHERE image_id = ${image_id}`
+        if (!hasWhere) {
+            query += ' WHERE '
+        } else {
+            query += ' AND '
+        }
+        query += `image_id = ${image_id}`
     } else {
-        if (text !== undefined && text !== "undefined" && text !== '') {
-            query += ` WHERE image_title LIKE '%${text}%'`
+        if (text !== undefined && text !== "undefined" && text !== '' && text !== 'null' && text !== null) {
+            if (!hasWhere) {
+                query += ' WHERE '
+            } else {
+                query += ' AND '
+            }
+            query += `image_title LIKE '%${text}%'`
         }
         if (sortBy === "newest") {
             query += ' ORDER BY image_date DESC';
@@ -415,6 +431,7 @@ async function search(pool, text, sortBy, user, image_id) {
             query += ' ORDER BY controversy DESC';
         }
     }
+    console.log(query);
     const answer = await pool.query(query);
 
     const tags = await pool.query('SELECT image_tags.image_id, tags.tag_name from image_tags, tags where image_tags.tag_id = tags.tag_id')

@@ -119,7 +119,8 @@ export default {
     },
     beforeRouteUpdate(to, from, next) {
       console.log("before route update:" + to + "---" + from);
-      this.getdata(to.query.text);
+      if (to.query.text !== undefined && to.query.text !== null)
+        this.getdata(to.query.text);
       next();
     }
 }
