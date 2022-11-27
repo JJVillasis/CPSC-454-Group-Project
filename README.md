@@ -12,6 +12,14 @@ host=image-database.*
 database=images
 password=*
 port=5432
+
+IdentityPoolId=us-east-*
+IdentityPoolIdNoRegion=*
+UserPoolId=us-east-1:*
+IdentityPoolIdLong=us-east-1:*
+IdentityPoolIdLongNoRegion=*
+UserPoolIdNoPrefix=*
+ClientId=*
 ```
 And in frontend/src/config/index.js
 ```javascript
