@@ -226,6 +226,8 @@ app.post('/addimage', async (req, res) => {
         let finalResult = await pool.query(`INSERT INTO image_tags (image_id, tag_id) VALUES ('${answer.rows[0].image_id}', '${tag_id}') RETURNING tag_id`);
         console.log("finalResult = " + finalResult.rows[0].tag_id)
     }
+    // update S3 image list
+    list();
 
     pool.end()
     res.header("Access-Control-Allow-Origin", "*");
