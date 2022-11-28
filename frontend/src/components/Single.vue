@@ -60,7 +60,9 @@ export default {
   name: 'SingleImage',
   data() {
     return {
-      post: {image_id: 0, imageUrl: ""}
+      post: {image_id: 0, imageUrl: ""},
+      Like: "Like",
+      Dislike: "Dislike"
     }
   },
   mounted() {
@@ -81,6 +83,8 @@ export default {
         }
       }).then(response => {
             this.post = getPosts(response.data, 0, 1)[0];
+            this.Like = this.post.userLikes !== undefined ? (this.post.userLikes.liked ? "Liked" : "Like") : "Like";
+            this.Dislike =  this.post.userLikes !== undefined ? (this.post.userLikes.disliked ? "Disliked" : "Dislike"): "Dislike";
           }
       );
     },
