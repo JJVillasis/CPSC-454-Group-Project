@@ -19,16 +19,6 @@
                   {{Like}}
               </button>
           </div>
-          <div v-if="this.post.comments !== undefined && this.post.comments.length > 0">
-            <div class="container"><h4>Comments</h4>
-              <div v-for="comment in post.comments" :post="comment" v-bind:key="comment">
-                <h6>{{comment.username}}</h6> <h6>{{new Date(comment.comment_date).toLocaleString()}}</h6>
-                <div>
-                  {{comment.comment_contents}}
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
     </div>
   </template>
