@@ -119,7 +119,7 @@ async function getCommentsPerImage(pool, image_id) {
 app.get('/search', async (req, res) => {
     const pool = new Pool(poolConfig);
 
-    const { image_rows, tags } = await search(pool, req.query.text, req.query.sortby, req.query.user, req.query.image_id);
+    const { image_rows, tags } = await search(pool, req.query.text, req.query.sortby, req.query.user, req.query.image_id, req.query.tag);
     const imageList = [];
     let userLikes = await getLikesForUser(pool, req.query.currentuser);
     let comments = await getComments(pool);
@@ -388,7 +388,7 @@ async function db() {
  * @returns {Promise<*>}
  */
 
-async function search(pool, text, sortBy, user, image_id) {
+async function search(pool, text, sortBy, user, image_id, tag) {
     console.log("text=" + text + " sortBy=" + sortBy + " user=" + user + " selected image=" + image_id);
 
     let query = `SELECT images.*, 
@@ -403,9 +403,27 @@ async function search(pool, text, sortBy, user, image_id) {
             AND likes.image_id = images.image_id) as controversy
     from images`
 
+    let tagRow = null
     let hasWhere = false;
+    if (tag !== undefined && tag !== null && tag !== "undefined") {
+        tagRow = await pool.query(`SELECT * FROM tags WHERE LOWER(tag_name) = '${tag.toLowerCase()}'`)
+        if (tagRow.rowCount !== 0) {
+            let tagId = tagRow.rows[0].tag_id;
+            query += ` INNER JOIN image_tags
+                    ON images.public.images.image_id = image_tags.image_id 
+                    WHERE image_tags.tag_id = ${tagId}`
+            hasWhere = true
+        }
+    }
+
+
     if (user !== undefined && user !== null && user !== 'undefined') {
-        query += ` WHERE username = '${user}'`
+        if (!hasWhere) {
+            query += ' WHERE '
+        } else {
+            query += ' AND '
+        }
+        query += ` username = '${user}'`
         hasWhere = true;
     }
 

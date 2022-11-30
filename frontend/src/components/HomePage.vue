@@ -48,6 +48,7 @@ export default {
             text: null,
             sortBy: null,
             username: null,
+            tag: null,
           router: useRouter(),
           route: useRoute()
         }
@@ -60,19 +61,20 @@ export default {
     methods: {
         changeSelection: function(event) {
             console.log("Clicked " + event.target.id);
-            this.getdata(null, event.target.id)
+            this.getdata(null, null, event.target.id)
         },
         getBackendUrl : function() {
           return config.prod ? config.backendProd : config.backendLocal;
         },
-        getdata: function(text, sortby, username) {
+        getdata: function(text, tag, sortby, username) {
           this.text = text;
           this.sortBy = sortby;
           this.username = username;
+          this.tag = tag;
           let currentUsername;
           if (CognitoAuth.getCurrentUser() != null)
             currentUsername = CognitoAuth.getCurrentUser().getUsername();
-          axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username+ "&currentuser="+currentUsername, {
+          axios.get(this.getBackendUrl() + "/search?text=" + text + "&sortby=" + sortby + "&user="+username+ "&currentuser="+currentUsername + "&tag=" + tag, {
             //We can add more configurations in this object
             params: {
 
@@ -119,8 +121,9 @@ export default {
     },
     beforeRouteUpdate(to, from, next) {
       console.log("before route update:" + to + "---" + from);
-      if (to.query.text !== undefined && to.query.text !== null)
-        this.getdata(to.query.text);
+      if ((to.query.text !== undefined && to.query.text !== null) || (to.query.tag !== undefined && to.query.tag !== null))
+        this.getdata(to.query.text, to.query.tag);
+      else this.getdata()
       next();
     }
 }

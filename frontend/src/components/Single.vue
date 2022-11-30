@@ -11,7 +11,7 @@
           <h5 class="imageLikes">Likes: {{post.likes}}</h5>
           <h5 class="imageDislikes">Dislikes: {{post.dislikes}}</h5>
           <div v-for="tag in this.post.tags" :post="tag" v-bind:key="tag">
-              <a href="/search?tag={{tag}}">#{{tag}}</a>
+            <router-link :to="`/?tag=${tag}`">#{{tag}}</router-link>
           </div>
         </div>
 
@@ -73,6 +73,12 @@ export default {
     getBackendUrl: function () {
       return config.prod ? config.backendProd : config.backendLocal;
     },
+    onClick: function (event, tag) {
+      if (event) {
+        event.preventDefault()
+      }
+      this.$router.replace({ path: '/', query: { tag: tag }})
+  },
     getdata: function () {
       let currentUsername = CognitoAuth.getCurrentUser().getUsername();
       axios.get(this.getBackendUrl() + "/search?image_id=" + this.$route.params.id + "&currentuser=" + currentUsername, {
