@@ -86,7 +86,7 @@ export default {
     }
   },
   beforeMount() {
-    this.username = CognitoAuth.getCurrentUser().getUsername();
+    this.username = CognitoAuth.getCurrentUser() ? CognitoAuth.getCurrentUser().getUsername() : null;
     this.sortBy = "newest"
     this.getdata(undefined, this.sortBy, this.username);
   },

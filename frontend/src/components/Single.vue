@@ -80,7 +80,9 @@ export default {
       this.$router.replace({ path: '/', query: { tag: tag }})
   },
     getdata: function () {
-      let currentUsername = CognitoAuth.getCurrentUser().getUsername();
+      let currentUsername;
+      if (CognitoAuth.getCurrentUser() !== null)
+        currentUsername = CognitoAuth.getCurrentUser().getUsername();
       axios.get(this.getBackendUrl() + "/search?image_id=" + this.$route.params.id + "&currentuser=" + currentUsername, {
         //We can add more configurations in this object
         params: {
