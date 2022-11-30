@@ -1,9 +1,5 @@
 <template>
     <div class="imageContainer">
-      <!-- Show image -->
-      <router-link :to="`/${post.image_id}`">
-        <img class="card-img-top" :src="post.imgURL" alt="">
-      </router-link>
 
       <div class="imageInfo">
         <div class="imageInfoLeft">
