@@ -1,5 +1,7 @@
 <template>
     <div class="imageContainer">
+      <!-- Show image -->
+        <img class="card-img-top" :src="post.imgURL" alt="">
 
       <div class="imageInfo">
         <div class="imageInfoLeft">
