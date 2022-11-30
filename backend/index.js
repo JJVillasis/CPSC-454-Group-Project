@@ -423,7 +423,7 @@ async function search(pool, text, sortBy, user, image_id) {
             } else {
                 query += ' AND '
             }
-            query += `image_title LIKE '%${text}%'`
+            query += `LOWER(image_title) LIKE '%${text.toLowerCase()}%'`
         }
         if (sortBy === "newest") {
             query += ' ORDER BY image_date DESC';
