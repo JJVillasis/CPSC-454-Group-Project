@@ -1,5 +1,16 @@
 # CPSC 454 Group Project
 
+# Group Members
+- Eric Britten (EBritten@csu.fullerton.edu)
+
+- Gabriel Cohn-Richer (gabrielcohnricher@csu.fullerton.edu)
+
+- Javier Perez (Javierp2013@csu.fullerton.edu)
+
+- Jahnvi Panchal (jahnvi@csu.fullerton.edu) 
+
+- Joshua Villasis (JJVillasis@csu.fullerton.edu)
+
 # How to configure:
 
 Create a file called backend/config.js
