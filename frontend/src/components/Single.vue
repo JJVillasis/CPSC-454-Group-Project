@@ -9,7 +9,7 @@
           <h5 class="imageLikes">Likes: {{post.likes}}</h5>
           <h5 class="imageDislikes">Dislikes: {{post.dislikes}}</h5>
           <div v-for="tag in this.post.tags" :post="tag" v-bind:key="tag">
-            <router-link :to="`/?tag=${tag}`">#{{tag}}</router-link>
+            <h5>#{{tag}}</h5>
           </div>
         </div>
 
@@ -148,7 +148,7 @@ export default {
 
 <style scoped>
 .imageContainer {
-  max-width: 90%;
+  max-width: 70%;
   margin: auto;
   margin-bottom: 20px;
 }
@@ -167,7 +167,7 @@ export default {
 /* Comments Section */
 
 .comments {
-  max-width: 90%;
+  max-width: 70%;
   margin: auto auto 0px;
   background-color: lightgray;
   text-align: center;

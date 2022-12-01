@@ -133,4 +133,9 @@ export default {
 body {
     background-color: #F4f4F4;
 }
+
+.nav-link {
+    color: #fff;
+    text-decoration: none;
+  }
 </style>
