@@ -9,7 +9,7 @@
           <h6 class="card-likes">Likes: {{post.likes}}</h6>
           <h6 class="card-likes">Dislikes: {{post.dislikes}}</h6>
           <div v-for="tag in this.post.tags" :post="tag" v-bind:key="tag">
-            <a href="/search?tag={{tag}}">#{{tag}}</a>
+            <router-link :to="`/?tag=${tag}`">#{{tag}}</router-link>
           </div>
           <div class="d-flex flex-row-reverse">
               <button class="btn btn-danger ml-2" v-on:click="dislike_button" ref="Dislike">

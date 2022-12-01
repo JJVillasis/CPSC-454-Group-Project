@@ -1,9 +1,7 @@
 <template>
     <div class="imageContainer">
       <!-- Show image -->
-      <router-link :to="`/${post.image_id}`">
         <img class="card-img-top" :src="post.imgURL" alt="">
-      </router-link>
 
       <div class="imageInfo">
         <div class="imageInfoLeft">
@@ -11,7 +9,7 @@
           <h5 class="imageLikes">Likes: {{post.likes}}</h5>
           <h5 class="imageDislikes">Dislikes: {{post.dislikes}}</h5>
           <div v-for="tag in this.post.tags" :post="tag" v-bind:key="tag">
-              <a href="/search?tag={{tag}}">#{{tag}}</a>
+            <h5>#{{tag}}</h5>
           </div>
         </div>
 
@@ -73,8 +71,16 @@ export default {
     getBackendUrl: function () {
       return config.prod ? config.backendProd : config.backendLocal;
     },
+    onClick: function (event, tag) {
+      if (event) {
+        event.preventDefault()
+      }
+      this.$router.replace({ path: '/', query: { tag: tag }})
+  },
     getdata: function () {
-      let currentUsername = CognitoAuth.getCurrentUser().getUsername();
+      let currentUsername;
+      if (CognitoAuth.getCurrentUser() !== null)
+        currentUsername = CognitoAuth.getCurrentUser().getUsername();
       axios.get(this.getBackendUrl() + "/search?image_id=" + this.$route.params.id + "&currentuser=" + currentUsername, {
         //We can add more configurations in this object
         params: {
@@ -142,7 +148,7 @@ export default {
 
 <style scoped>
 .imageContainer {
-  max-width: 90%;
+  max-width: 70%;
   margin: auto;
   margin-bottom: 20px;
 }
@@ -161,7 +167,7 @@ export default {
 /* Comments Section */
 
 .comments {
-  max-width: 90%;
+  max-width: 70%;
   margin: auto auto 0px;
   background-color: lightgray;
   text-align: center;

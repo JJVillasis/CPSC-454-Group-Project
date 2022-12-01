@@ -1,9 +1,8 @@
 <template>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
       <a class="navbar-brand" href="#"></a>
-      <router-link class="nav-link" to="/">
-        <img src="../assets/cameraBuddy.png" width="80" height="80" class="d-inline-block" alt="">
-        Pictografy
+      <router-link class="nav-heading" to="/">
+      <img src="../assets/cameraBuddy.png" width="80" height="80" class="d-inline-block" alt="">Pictografy
       </router-link>
       
       <button
@@ -20,7 +19,7 @@
       <div class="collapse navbar-collapse" id="navbarText">
         <ul class="navbar-nav mx-auto">
           <form class="form-inline">
-            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" v-model="searchtext">
+            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" v-model="searchtext" size="50">
             <button class="btn btn-outline-success my-2 my-sm-0" type="submit" v-on:click="onClick($event)">Go</button>
           </form>
         </ul>
@@ -68,5 +67,24 @@
   </script>
 
   <style>
+
+  .nav-heading:link {
+    font-size: 45px;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .nav-heading:visited {
+    font-size: 45px;
+    color: #fff;
+    text-decoration: none;
+  }
+
+  .nav-link {
+    color: #fff;
+    text-decoration: none;
+  }
+  
+
   </style>
   

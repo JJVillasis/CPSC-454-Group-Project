@@ -16,6 +16,11 @@
             <div class="input-field">
                 <label for="password">Password</label>
                 <input id="password" type="password" class="form-control" v-model="pass" required>
+                <p class="password__specify">Password must have:</p>
+                <ul>At least 8 characters</ul>
+                <ul>Upper and lowercase letters</ul>
+                <ul>Numeric characters</ul>
+                <ul>Symbolic characters</ul>
             </div>
             <div class="center-align">
                 <hr/>
@@ -72,6 +77,20 @@ p {
     font-size: 14px;
     padding-bottom: 10px;
 }
+ul {
+    list-style-type: square;
+    font-size: 11px;
+    margin: 0;
+    padding-left: 10px;
+    color: grey;
+}
+
+.password__specify {
+    text-align: justify;
+    padding-bottom: 0%;
+    margin-bottom: 0;
+}
+
 .login-box {
     width: 400px;
     height: auto;
